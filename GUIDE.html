@@ -1,0 +1,2542 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Clipboard Vault — Secure Clipboard Manager for macOS</title>
+  <meta name="description"
+    content="Post-quantum encrypted clipboard manager for macOS. Touch ID, instant search, smart categorization. Everything you copy, protected.">
+  <style>
+    :root {
+      --bg: #ffffff;
+      --bg-alt: #f5f5f7;
+      --bg-dark: #000000;
+      --text: #1d1d1f;
+      --text-secondary: #6e6e73;
+      --text-tertiary: #86868b;
+      --accent: #0071e3;
+      --accent-hover: #0077ed;
+      --green: #34c759;
+      --purple: #af52de;
+      --orange: #ff9500;
+      --teal: #5ac8fa;
+      --border: #d2d2d7;
+      --card: #ffffff;
+      --font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+      --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #000000;
+        --bg-alt: #1c1c1e;
+        --text: #f5f5f7;
+        --text-secondary: #a1a1a6;
+        --text-tertiary: #6e6e73;
+        --border: #38383a;
+        --card: #1c1c1e;
+      }
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    /* ── Nav ── */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 52px;
+      background: rgba(255, 255, 255, 0.72);
+      backdrop-filter: saturate(180%) blur(20px);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      nav {
+        background: rgba(29, 29, 31, 0.72);
+        border-bottom-color: rgba(255, 255, 255, 0.08);
+      }
+    }
+
+    .nav-inner {
+      max-width: 1024px;
+      width: 100%;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .nav-brand {
+      font-family: var(--font-display);
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+      text-decoration: none;
+      letter-spacing: -0.3px;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 28px;
+      align-items: center;
+    }
+
+    .nav-links a {
+      font-size: 13px;
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover {
+      color: var(--text);
+    }
+
+    .nav-cta {
+      background: var(--accent) !important;
+      color: white !important;
+      padding: 6px 16px;
+      border-radius: 980px;
+      font-size: 13px !important;
+      transition: opacity 0.2s !important;
+    }
+
+    .nav-cta:hover {
+      opacity: 0.85;
+    }
+
+    /* ── Hero ── */
+    .hero {
+      padding: 140px 24px 80px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: radial-gradient(ellipse 80% 60% at 50% 20%, rgba(0, 113, 227, 0.08) 0%, transparent 70%),
+        radial-gradient(ellipse 60% 50% at 30% 40%, rgba(175, 82, 222, 0.05) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 70% 40%, rgba(52, 199, 89, 0.05) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg-alt);
+      border: 1px solid var(--border);
+      border-radius: 980px;
+      padding: 6px 16px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: 24px;
+    }
+
+    .hero-badge .dot {
+      width: 8px;
+      height: 8px;
+      background: var(--green);
+      border-radius: 50%;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      50% {
+        opacity: 0.5;
+        transform: scale(0.85);
+      }
+    }
+
+    .hero h1 {
+      font-family: var(--font-display);
+      font-size: 72px;
+      font-weight: 700;
+      letter-spacing: -2px;
+      line-height: 1.05;
+      margin-bottom: 20px;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .hero h1 .gradient {
+      background: linear-gradient(135deg, var(--accent) 0%, var(--purple) 50%, var(--green) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-sub {
+      font-size: 21px;
+      color: var(--text-secondary);
+      max-width: 560px;
+      margin: 0 auto 40px;
+      line-height: 1.5;
+      font-weight: 400;
+    }
+
+    .hero-ctas {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      margin-bottom: 64px;
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--accent);
+      color: white;
+      padding: 16px 32px;
+      border-radius: 980px;
+      font-size: 17px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s;
+      border: none;
+      cursor: pointer;
+    }
+
+    .btn-primary:hover {
+      opacity: 0.85;
+      transform: scale(1.02);
+    }
+
+    .btn-primary svg {
+      width: 18px;
+      height: 18px;
+      fill: white;
+    }
+
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: transparent;
+      color: var(--accent);
+      padding: 16px 32px;
+      border-radius: 980px;
+      font-size: 17px;
+      font-weight: 600;
+      text-decoration: none;
+      border: 1.5px solid var(--accent);
+      transition: all 0.2s;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(0, 113, 227, 0.06);
+    }
+
+    /* ── App Preview ── */
+    .hero-preview {
+      max-width: 900px;
+      margin: 0 auto;
+      position: relative;
+    }
+
+    .app-window {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 20px 80px rgba(0, 0, 0, 0.12), 0 4px 20px rgba(0, 0, 0, 0.06);
+    }
+
+    .app-titlebar {
+      height: 40px;
+      background: var(--bg-alt);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      gap: 8px;
+    }
+
+    .app-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    .app-dot.r {
+      background: #ff5f57;
+    }
+
+    .app-dot.y {
+      background: #febc2e;
+    }
+
+    .app-dot.g {
+      background: #28c840;
+    }
+
+    .app-body {
+      display: flex;
+      height: 440px;
+    }
+
+    .app-sidebar {
+      width: 280px;
+      border-right: 1px solid var(--border);
+      padding: 12px;
+      overflow: hidden;
+    }
+
+    .app-search {
+      width: 100%;
+      height: 32px;
+      background: var(--bg-alt);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 12px;
+      padding: 0 10px;
+      font-size: 13px;
+      color: var(--text-tertiary);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .app-search svg {
+      width: 14px;
+      height: 14px;
+      fill: var(--text-tertiary);
+    }
+
+    .clip-row {
+      padding: 10px 12px;
+      border-radius: 8px;
+      margin-bottom: 4px;
+      cursor: default;
+      transition: background 0.15s;
+    }
+
+    .clip-row.active {
+      background: rgba(0, 113, 227, 0.12);
+    }
+
+    .clip-row:hover:not(.active) {
+      background: var(--bg-alt);
+    }
+
+    .clip-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+
+    .clip-app {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .clip-time {
+      font-size: 11px;
+      color: var(--text-tertiary);
+    }
+
+    .clip-preview {
+      font-size: 13px;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.4;
+    }
+
+    .clip-cat {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 1px 6px;
+      border-radius: 4px;
+      margin-top: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .cat-code {
+      background: rgba(175, 82, 222, 0.12);
+      color: var(--purple);
+    }
+
+    .cat-url {
+      background: rgba(0, 113, 227, 0.12);
+      color: var(--accent);
+    }
+
+    .cat-text {
+      background: rgba(142, 142, 147, 0.12);
+      color: var(--text-secondary);
+    }
+
+    .cat-image {
+      background: rgba(255, 149, 0, 0.12);
+      color: var(--orange);
+    }
+
+    .app-detail {
+      flex: 1;
+      padding: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-alt);
+    }
+
+    .detail-content {
+      font-size: 14px;
+      color: var(--text-secondary);
+      text-align: left;
+      max-width: 340px;
+      line-height: 1.8;
+      font-family: 'SF Mono', Menlo, monospace;
+    }
+
+    .detail-content .kw {
+      color: var(--purple);
+      font-weight: 600;
+    }
+
+    .detail-content .fn {
+      color: var(--accent);
+    }
+
+    .detail-content .str {
+      color: var(--green);
+    }
+
+    .detail-content .cm {
+      color: var(--text-tertiary);
+    }
+
+    /* ── Floating badges ── */
+    .hero-float {
+      position: absolute;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 16px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      animation: float 6s ease-in-out infinite;
+      z-index: 2;
+    }
+
+    .hero-float svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .float-left {
+      left: 4%;
+      top: 60%;
+      animation-delay: -1s;
+    }
+
+    .float-right {
+      right: 4%;
+      top: 55%;
+      animation-delay: -3s;
+    }
+
+    @keyframes float {
+
+      0%,
+      100% {
+        transform: translateY(0);
+      }
+
+      50% {
+        transform: translateY(-12px);
+      }
+    }
+
+    /* ── Section layout ── */
+    .section {
+      padding: 120px 24px;
+      max-width: 1024px;
+      margin: 0 auto;
+    }
+
+    .section-dark {
+      background: var(--bg-dark);
+      color: #f5f5f7;
+      max-width: 100%;
+      padding: 120px 24px;
+    }
+
+    .section-dark .inner {
+      max-width: 1024px;
+      margin: 0 auto;
+    }
+
+    .section-alt {
+      background: var(--bg-alt);
+      max-width: 100%;
+      padding: 120px 24px;
+    }
+
+    .section-alt .inner {
+      max-width: 1024px;
+      margin: 0 auto;
+    }
+
+    .section-label {
+      font-size: 14px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--accent);
+      margin-bottom: 12px;
+      text-align: center;
+    }
+
+    .section-title {
+      font-family: var(--font-display);
+      font-size: 48px;
+      font-weight: 700;
+      letter-spacing: -1px;
+      text-align: center;
+      margin-bottom: 16px;
+      line-height: 1.1;
+    }
+
+    .section-subtitle {
+      font-size: 19px;
+      color: var(--text-secondary);
+      text-align: center;
+      max-width: 600px;
+      margin: 0 auto 64px;
+      line-height: 1.5;
+    }
+
+    .section-dark .section-subtitle {
+      color: #a1a1a6;
+    }
+
+    /* ── Feature grid ── */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+
+    .feature-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 32px;
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
+    }
+
+    .feature-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+
+    .feature-icon svg {
+      width: 24px;
+      height: 24px;
+      fill: white;
+    }
+
+    .fi-blue {
+      background: linear-gradient(135deg, #0071e3, #40a0ff);
+    }
+
+    .fi-green {
+      background: linear-gradient(135deg, #34c759, #30d158);
+    }
+
+    .fi-purple {
+      background: linear-gradient(135deg, #af52de, #bf5af2);
+    }
+
+    .fi-orange {
+      background: linear-gradient(135deg, #ff9500, #ffb340);
+    }
+
+    .fi-teal {
+      background: linear-gradient(135deg, #5ac8fa, #64d2ff);
+    }
+
+    .fi-red {
+      background: linear-gradient(135deg, #ff3b30, #ff6961);
+    }
+
+    .feature-card h3 {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      letter-spacing: -0.2px;
+    }
+
+    .feature-card p {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    /* ── Encryption showcase ── */
+    .encrypt-visual {
+      display: flex;
+      gap: 40px;
+      align-items: center;
+      margin-top: 64px;
+    }
+
+    .encrypt-left {
+      flex: 1;
+    }
+
+    .encrypt-right {
+      flex: 1;
+    }
+
+    .encrypt-step {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 32px;
+      align-items: flex-start;
+    }
+
+    .encrypt-num {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: rgba(0, 113, 227, 0.12);
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .section-dark .encrypt-num {
+      background: rgba(41, 151, 255, 0.15);
+      color: #2997ff;
+    }
+
+    .encrypt-step h4 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .encrypt-step p {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .section-dark .encrypt-step p {
+      color: #a1a1a6;
+    }
+
+    .token-visual {
+      background: #1c1c1e;
+      border-radius: 16px;
+      padding: 32px;
+      font-family: 'SF Mono', Menlo, monospace;
+      font-size: 13px;
+      line-height: 2;
+      overflow: hidden;
+      border: 1px solid #38383a;
+    }
+
+    .tv-label {
+      color: #6e6e73;
+    }
+
+    .tv-plain {
+      color: #ff9500;
+    }
+
+    .tv-arrow {
+      color: #6e6e73;
+      font-size: 20px;
+      display: block;
+      margin: 8px 0;
+      text-align: center;
+    }
+
+    .tv-encrypted {
+      color: #34c759;
+      word-break: break-all;
+    }
+
+    .tv-prefix {
+      color: #af52de;
+    }
+
+    /* ── Stats row ── */
+    .stats-row {
+      display: flex;
+      justify-content: center;
+      gap: 80px;
+      margin-top: 64px;
+    }
+
+    .stat {
+      text-align: center;
+    }
+
+    .stat-num {
+      font-family: var(--font-display);
+      font-size: 56px;
+      font-weight: 700;
+      letter-spacing: -2px;
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+
+    .stat-num.blue {
+      color: var(--accent);
+    }
+
+    .stat-num.green {
+      color: var(--green);
+    }
+
+    .stat-num.purple {
+      color: var(--purple);
+    }
+
+    .stat-label {
+      font-size: 14px;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    .section-dark .stat-label {
+      color: #a1a1a6;
+    }
+
+    /* ── Keyboard shortcuts ── */
+    .shortcuts-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      max-width: 640px;
+      margin: 0 auto;
+    }
+
+    .shortcut-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: transform 0.2s;
+    }
+
+    .shortcut-card:hover {
+      transform: translateY(-2px);
+    }
+
+    .shortcut-label {
+      font-size: 15px;
+      font-weight: 500;
+    }
+
+    kbd {
+      font-family: 'SF Mono', Menlo, monospace;
+      font-size: 12px;
+      background: var(--bg-alt);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-weight: 600;
+    }
+
+    /* ── CTA section ── */
+    .cta-section {
+      text-align: center;
+      padding: 120px 24px;
+    }
+
+    .cta-section h2 {
+      font-family: var(--font-display);
+      font-size: 52px;
+      font-weight: 700;
+      letter-spacing: -1.5px;
+      margin-bottom: 16px;
+      line-height: 1.1;
+    }
+
+    .cta-section p {
+      font-size: 19px;
+      color: var(--text-secondary);
+      margin-bottom: 40px;
+    }
+
+    /* ── Footer ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 40px 24px;
+      text-align: center;
+    }
+
+    .footer-inner {
+      max-width: 1024px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .footer-copy {
+      font-size: 13px;
+      color: var(--text-tertiary);
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 24px;
+    }
+
+    .footer-links a {
+      font-size: 13px;
+      color: var(--text-secondary);
+      text-decoration: none;
+    }
+
+    .footer-links a:hover {
+      color: var(--text);
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .hero h1 {
+        font-size: 42px;
+        letter-spacing: -1px;
+      }
+
+      .hero-sub {
+        font-size: 17px;
+      }
+
+      .features-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .encrypt-visual {
+        flex-direction: column;
+      }
+
+      .stats-row {
+        flex-direction: column;
+        gap: 32px;
+      }
+
+      .shortcuts-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .section-title {
+        font-size: 36px;
+      }
+
+      .cta-section h2 {
+        font-size: 36px;
+      }
+
+      .hero-ctas {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .hero-float {
+        display: none;
+      }
+
+      .app-body {
+        height: auto;
+        flex-direction: column;
+      }
+
+      .app-sidebar {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .app-detail {
+        min-height: 200px;
+      }
+
+      .footer-inner {
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .nav-links a:not(.nav-cta) {
+        display: none;
+      }
+    }
+
+    /* ── Fade-in animation ── */
+    .fade-in {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.8s ease, transform 0.8s ease;
+    }
+
+    .fade-in.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Nav -->
+  <nav>
+    <div class="nav-inner">
+      <a class="nav-brand" href="#">Clipboard Vault</a>
+      <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#security">Security</a>
+        <a href="#shortcuts">Shortcuts</a>
+        <a href="support.html">Support</a>
+        <a class="nav-cta" href="https://apps.apple.com/app/clipboard-vault/id6760243773">Download</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Language Selector (hidden for now) -->
+  <div class="lang-bar" style="display:none;">
+    <label for="lang-picker">Language</label>
+    <select class="lang-select" id="lang-picker" onchange="setLang(this.value)">
+      <option value="en">English</option>
+      <option value="te">తెలుగు</option>
+    </select>
+  </div>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-badge">
+      <span class="dot"></span>
+      Post-Quantum Encrypted
+    </div>
+    <h1>Everything you copy.<br><span class="gradient">Protected.</span></h1>
+    <p class="hero-sub">The clipboard manager that encrypts every clip with post-quantum cryptography. Built for macOS,
+      designed for privacy.</p>
+    <div class="hero-ctas">
+      <a class="btn-primary" href="https://apps.apple.com/app/clipboard-vault/id6760243773">
+        <svg viewBox="0 0 24 24">
+          <path
+            d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
+        </svg>
+        Download on the App Store
+      </a>
+      <a class="btn-secondary" href="#features">Learn More</a>
+    </div>
+
+    <!-- App Preview -->
+    <div class="hero-preview fade-in">
+      <div class="app-window">
+        <div class="app-titlebar">
+          <div class="app-dot r"></div>
+          <div class="app-dot y"></div>
+          <div class="app-dot g"></div>
+        </div>
+        <div class="app-body">
+          <div class="app-sidebar">
+            <div class="app-search">
+              <svg viewBox="0 0 24 24">
+                <path
+                  d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
+              </svg>
+              Search history...
+            </div>
+            <div class="clip-row active">
+              <div class="clip-meta">
+                <span class="clip-app">VS Code</span>
+                <span class="clip-time">Just now</span>
+              </div>
+              <div class="clip-preview">def encrypt(data, key):</div>
+              <span class="clip-cat cat-code">code</span>
+            </div>
+            <div class="clip-row">
+              <div class="clip-meta">
+                <span class="clip-app">Safari</span>
+                <span class="clip-time">2m ago</span>
+              </div>
+              <div class="clip-preview">https://developer.apple.com/docs</div>
+              <span class="clip-cat cat-url">url</span>
+            </div>
+            <div class="clip-row">
+              <div class="clip-meta">
+                <span class="clip-app">Notes</span>
+                <span class="clip-time">5m ago</span>
+              </div>
+              <div class="clip-preview">Meeting notes for the Q1 review...</div>
+              <span class="clip-cat cat-text">text</span>
+            </div>
+            <div class="clip-row">
+              <div class="clip-meta">
+                <span class="clip-app">Preview</span>
+                <span class="clip-time">12m ago</span>
+              </div>
+              <div class="clip-preview">Screenshot 2026-03-08.png</div>
+              <span class="clip-cat cat-image">image</span>
+            </div>
+            <div class="clip-row">
+              <div class="clip-meta">
+                <span class="clip-app">Terminal</span>
+                <span class="clip-time">18m ago</span>
+              </div>
+              <div class="clip-preview">ssh deploy@prod-server-01</div>
+              <span class="clip-cat cat-code">code</span>
+            </div>
+          </div>
+          <div class="app-detail">
+            <div class="detail-content">
+              <span class="cm">// Encrypted at rest with AES-256-GCM</span><br>
+              <span class="kw">def</span> <span class="fn">encrypt</span>(data, key):<br>
+              &nbsp;&nbsp;&nbsp;&nbsp;nonce = <span class="fn">os.urandom</span>(<span class="tv-plain">12</span>)<br>
+              &nbsp;&nbsp;&nbsp;&nbsp;cipher = <span class="fn">AESGCM</span>(key)<br>
+              &nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> cipher.<span class="fn">encrypt</span>(<br>
+              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;nonce, data, <span class="str">None</span><br>
+              &nbsp;&nbsp;&nbsp;&nbsp;)
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Floating badges -->
+      <div class="hero-float float-left">
+        <svg viewBox="0 0 24 24" style="fill: var(--green); width: 20px; height: 20px;">
+          <path
+            d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z" />
+        </svg>
+        AES-256-GCM Encrypted
+      </div>
+      <div class="hero-float float-right">
+        <svg viewBox="0 0 24 24" style="fill: var(--purple); width: 20px; height: 20px;">
+          <path
+            d="M17.81 4.47c-.08 0-.16-.02-.23-.06C15.66 3.42 14 3 12.01 3c-1.98 0-3.86.47-5.57 1.41-.24.13-.54.04-.68-.2-.13-.24-.04-.55.2-.68C7.82 2.52 9.86 2 12.01 2c2.13 0 3.99.47 6.03 1.52.25.13.34.43.21.67-.09.18-.26.28-.44.28zM3.5 9.72c-.1 0-.2-.03-.29-.09-.23-.16-.28-.47-.12-.7.99-1.4 2.25-2.5 3.75-3.27C9.98 4.04 14 4.03 17.15 5.65c1.5.77 2.76 1.86 3.75 3.25.16.22.11.54-.12.7-.23.16-.54.11-.7-.12-.9-1.26-2.04-2.25-3.39-2.94-2.87-1.47-6.54-1.47-9.4.01-1.36.7-2.5 1.7-3.4 2.96-.08.14-.23.21-.39.21zm6.25 12.07c-.13 0-.26-.05-.35-.15-.87-.87-1.34-1.43-2.01-2.64-.69-1.23-1.05-2.73-1.05-4.34 0-2.97 2.54-5.39 5.66-5.39s5.66 2.42 5.66 5.39c0 .28-.22.5-.5.5s-.5-.22-.5-.5c0-2.42-2.09-4.39-4.66-4.39s-4.66 1.97-4.66 4.39c0 1.44.32 2.77.93 3.85.64 1.15 1.08 1.64 1.85 2.42.19.2.19.51 0 .71-.11.1-.24.15-.37.15z" />
+        </svg>
+        Touch ID Protected
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section class="section-alt" id="features">
+    <div class="inner">
+      <p class="section-label">Features</p>
+      <h2 class="section-title fade-in">Everything you need.<br>Nothing you don't.</h2>
+      <p class="section-subtitle fade-in">A clipboard manager that's powerful enough for developers and simple enough
+        for everyone.</p>
+
+      <div class="features-grid">
+        <div class="feature-card fade-in">
+          <div class="feature-icon fi-blue">
+            <svg viewBox="0 0 24 24">
+              <path
+                d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z" />
+            </svg>
+          </div>
+          <h3>Automatic History</h3>
+          <p>Every copy is captured instantly. Text, images, files, RTF, URLs, and code — all searchable, all organized.
+          </p>
+        </div>
+        <div class="feature-card fade-in">
+          <div class="feature-icon fi-green">
+            <svg viewBox="0 0 24 24">
+              <path
+                d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z" />
+            </svg>
+          </div>
+          <h3>Post-Quantum Encryption</h3>
+          <p>Hybrid X25519 + ML-KEM-768 with AES-256-GCM. Your clips are encrypted before they ever touch disk.</p>
+        </div>
+        <div class="feature-card fade-in">
+          <div class="feature-icon fi-purple">
+            <svg viewBox="0 0 24 24">
+              <path
+                d="M17.81 4.47c-.08 0-.16-.02-.23-.06C15.66 3.42 14 3 12.01 3c-1.98 0-3.86.47-5.57 1.41-.24.13-.54.04-.68-.2-.13-.24-.04-.55.2-.68C7.82 2.52 9.86 2 12.01 2c2.13 0 3.99.47 6.03 1.52.25.13.34.43.21.67-.09.18-.26.28-.44.28zM3.5 9.72c-.1 0-.2-.03-.29-.09-.23-.16-.28-.47-.12-.7.99-1.4 2.25-2.5 3.75-3.27C9.98 4.04 14 4.03 17.15 5.65c1.5.77 2.76 1.86 3.75 3.25.16.22.11.54-.12.7-.23.16-.54.11-.7-.12-.9-1.26-2.04-2.25-3.39-2.94-2.87-1.47-6.54-1.47-9.4.01-1.36.7-2.5 1.7-3.4 2.96-.08.14-.23.21-.39.21zm6.25 12.07c-.13 0-.26-.05-.35-.15-.87-.87-1.34-1.43-2.01-2.64-.69-1.23-1.05-2.73-1.05-4.34 0-2.97 2.54-5.39 5.66-5.39s5.66 2.42 5.66 5.39c0 .28-.22.5-.5.5s-.5-.22-.5-.5c0-2.42-2.09-4.39-4.66-4.39s-4.66 1.97-4.66 4.39c0 1.44.32 2.77.93 3.85.64 1.15 1.08 1.64 1.85 2.42.19.2.19.51 0 .71-.11.1-.24.15-.37.15z" />
+            </svg>
+          </div>
+          <h3>Touch ID</h3>
+          <p>Unlock your history with a fingerprint. Configurable auto-lock keeps your data protected when you step
+            away.</p>
+        </div>
+        <div class="feature-card fade-in">
+          <div class="feature-icon fi-orange">
+            <svg viewBox="0 0 24 24">
+              <path
+                d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
+            </svg>
+          </div>
+          <h3>Instant Search</h3>
+          <p>Find anything you've ever copied in milliseconds. Powered by an in-memory inverted index — no slow scans.
+          </p>
+        </div>
+        <div class="feature-card fade-in">
+          <div class="feature-icon fi-teal">
+            <svg viewBox="0 0 24 24">
+              <path
+                d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9h-4v4h-2v-4H9V9h4V5h2v4h4v2z" />
+            </svg>
+          </div>
+          <h3>Smart Categories</h3>
+          <p>Clips are auto-tagged as text, URL, code, email, path, number, image, or file. Filter to find exactly what
+            you need.</p>
+        </div>
+        <div class="feature-card fade-in">
+          <div class="feature-icon fi-red">
+            <svg viewBox="0 0 24 24">
+              <path
+                d="M14.06 9.94L12 9l2.06-.94L15 6l.94 2.06L18 9l-2.06.94L15 12l-.94-2.06zM4 14l.94-2.06L7 11l-2.06-.94L4 8l-.94 2.06L1 11l2.06.94zm4.5-5l1.09-2.41L12 5.5 9.59 4.41 8.5 2 7.41 4.41 5 5.5l2.41 1.09zm-4 11.5l6-6.01 4 4L23 8.93l-1.41-1.41-7.09 7.97-4-4L3 19z" />
+            </svg>
+          </div>
+          <h3>Pin & Notes</h3>
+          <p>Pin important clips to keep them forever. Add notes for extra context. Your clipboard, organized your way.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Security -->
+  <section class="section-dark" id="security">
+    <div class="inner">
+      <p class="section-label" style="color: #2997ff;">Security</p>
+      <h2 class="section-title fade-in">Encrypted before it<br>touches the disk.</h2>
+      <p class="section-subtitle fade-in">Every clip is wrapped in hybrid post-quantum encryption. Even if someone
+        copies your database, they get nothing.</p>
+
+      <div class="encrypt-visual">
+        <div class="encrypt-left">
+          <div class="encrypt-step fade-in">
+            <div class="encrypt-num">1</div>
+            <div>
+              <h4>You copy something</h4>
+              <p>Clipboard Vault captures the content and immediately encrypts it with a fresh ephemeral key pair.</p>
+            </div>
+          </div>
+          <div class="encrypt-step fade-in">
+            <div class="encrypt-num">2</div>
+            <div>
+              <h4>Hybrid key exchange</h4>
+              <p>X25519 and ML-KEM-768 run in parallel. Their shared secrets are combined via HKDF to derive a unique
+                AES-256 key.</p>
+            </div>
+          </div>
+          <div class="encrypt-step fade-in">
+            <div class="encrypt-num">3</div>
+            <div>
+              <h4>AES-256-GCM seals it</h4>
+              <p>Content is authenticated-encrypted. The ciphertext, nonce, and ephemeral keys are stored. Plaintext is
+                never written.</p>
+            </div>
+          </div>
+          <div class="encrypt-step fade-in">
+            <div class="encrypt-num">4</div>
+            <div>
+              <h4>Touch ID to decrypt</h4>
+              <p>Private keys live in macOS Keychain. Only your fingerprint or password can unlock them. Keys are zeroed
+                from memory on lock.</p>
+            </div>
+          </div>
+        </div>
+        <div class="encrypt-right fade-in">
+          <div class="token-visual">
+            <div class="tv-label">// What you copied</div>
+            <div class="tv-plain">ssh deploy@prod-server-01</div>
+            <div class="tv-arrow">↓</div>
+            <div class="tv-label">// What's stored on disk</div>
+            <div><span class="tv-prefix">v4:</span><span
+                class="tv-encrypted">kE9xQ2mP7nR3tY8wA5sD1fG4hJ6lZ0cV2bN9mK3qW7eR5tY8uI0oP4aS6dF1gH3jL7zX9cV2bN0mQ5wE8rT1yU4iO6pA3sD...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stats-row fade-in">
+        <div class="stat">
+          <div class="stat-num blue">256</div>
+          <div class="stat-label">bit AES-GCM encryption</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num green">0</div>
+          <div class="stat-label">bytes transmitted off-device</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num purple">768</div>
+          <div class="stat-label">dimension ML-KEM lattice</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Shortcuts -->
+  <section class="section" id="shortcuts">
+    <p class="section-label">Keyboard First</p>
+    <h2 class="section-title fade-in">Built for speed.</h2>
+    <p class="section-subtitle fade-in">Access everything without touching the mouse. Global hotkey brings your history
+      to you.</p>
+
+    <div class="shortcuts-grid">
+      <div class="shortcut-card fade-in">
+        <span class="shortcut-label">Open Clipboard Vault</span>
+        <span><kbd>⌘</kbd> <kbd>⇧</kbd> <kbd>V</kbd></span>
+      </div>
+      <div class="shortcut-card fade-in">
+        <span class="shortcut-label">Search history</span>
+        <span><kbd>⌘</kbd> <kbd>F</kbd></span>
+      </div>
+      <div class="shortcut-card fade-in">
+        <span class="shortcut-label">Navigate clips</span>
+        <span><kbd>↑</kbd> <kbd>↓</kbd></span>
+      </div>
+      <div class="shortcut-card fade-in">
+        <span class="shortcut-label">Paste selected</span>
+        <span><kbd>⌘</kbd> <kbd>V</kbd></span>
+      </div>
+      <div class="shortcut-card fade-in">
+        <span class="shortcut-label">Close panel</span>
+        <span><kbd>Esc</kbd></span>
+      </div>
+      <div class="shortcut-card fade-in">
+        <span class="shortcut-label">Select all</span>
+        <span><kbd>⌘</kbd> <kbd>A</kbd></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta-section">
+    <h2 class="fade-in">Ready to never lose<br>a copy again?</h2>
+    <p class="fade-in">Free to download. Your clipboard, encrypted and organized.</p>
+    <a class="btn-primary fade-in" href="https://apps.apple.com/app/clipboard-vault/id6760243773"
+      style="display: inline-flex;">
+      <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: white;">
+        <path
+          d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
+      </svg>
+      Download on the App Store
+    </a>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-copy">© 2026 Arjun Donthala. All rights reserved.</div>
+      <div class="footer-links">
+        <a href="privacy.html">Privacy Policy</a>
+        <a href="support.html">Support</a>
+        <a href="privacy-choices.html">Privacy Choices</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ═══════════════════════════════════════════════════════
+     Chat FAB + Panel (restored original)
+     ═══════════════════════════════════════════════════════ -->
+  <button class="chat-fab" id="chat-fab" onclick="toggleChat()" aria-label="Ask a question">
+    <span id="fab-icon">💬</span>
+  </button>
+
+  <div class="chat-panel" id="chat-panel">
+    <!-- Voice Mode Overlay (covers chat panel) -->
+    <div class="voice-overlay" id="voice-overlay" data-state="idle">
+      <div class="voice-orb-wrap">
+        <div class="voice-orb"></div>
+        <div class="voice-orb-ring"></div>
+      </div>
+      <div class="voice-status" id="voice-status">Connecting...</div>
+      <div class="voice-btn-row">
+        <button class="voice-interrupt-btn" id="voice-interrupt" onclick="interruptLive()">Interrupt</button>
+        <button class="voice-end-btn" onclick="endLiveSession()">End</button>
+      </div>
+    </div>
+
+    <div class="chat-header">
+      <div class="chat-header-icon">🤖</div>
+      <div class="chat-header-text">
+        <h4>
+          <span lang="en">Ask about Clipboard Vault</span>
+          <span lang="te">Clipboard Vault గురించి అడగండి</span>
+        </h4>
+        <p>
+          <span lang="en">Powered by Claude</span>
+          <span lang="te">Claude ద్వారా</span>
+        </p>
+      </div>
+    </div>
+
+    <!-- Chat Area -->
+    <div class="chat-messages" id="chat-messages">
+      <div class="chat-msg system" lang="en">Ask me anything about Clipboard Vault — features, privacy, encryption,
+        setup, or how things work.</div>
+      <div class="chat-msg system" lang="te">Clipboard Vault గురించి ఏదైనా అడగండి — ఫీచర్లు, గోప్యత, భద్రత, సెటప్.</div>
+      <!-- Typing indicator (static, toggled via JS) -->
+      <div class="chat-typing" id="typing-indicator">
+        <span></span><span></span><span></span>
+      </div>
+    </div>
+    <!-- Dev log (only visible in dev mode) -->
+    <div class="chat-devlog" id="chat-devlog"></div>
+
+    <div class="chat-input-area" id="chat-input-area">
+      <textarea class="chat-input" id="chat-input" rows="1" placeholder="Ask a question..."
+        onkeydown="handleChatKey(event)" oninput="updateActionButtons()"></textarea>
+      <button class="chat-mic" id="chat-mic" onclick="toggleMicInput()" aria-label="Voice input">
+        <svg viewBox="0 0 24 24" width="17" height="17">
+          <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" fill="currentColor" />
+          <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"
+            fill="currentColor" />
+        </svg>
+      </button>
+      <button class="chat-action-btn" id="chat-send" onclick="sendMessage()" aria-label="Send" style="display:none;">
+        <svg viewBox="0 0 24 24" width="16" height="16">
+          <path
+            d="M3.67 20.4l1.91-7.18L3.67 6.04a.996.996 0 01-.04-.22c0-.55.45-1 1-1 .13 0 .26.03.38.08l16.32 7.11c.36.16.6.52.6.92s-.24.77-.6.92L5.01 20.96a.996.996 0 01-.38.08c-.55 0-1-.45-1-1 0-.08.01-.15.04-.22zM6.35 13.22L5.3 17.1 18 12.93 6.35 13.22zm-.05-2.44L18 8.07 5.3 7.9l1.05 3.88z"
+            fill="currentColor" />
+        </svg>
+      </button>
+      <button class="chat-action-btn" id="chat-live" onclick="toggleVoice()" aria-label="Live voice mode">
+        <svg viewBox="0 0 24 24" width="17" height="17">
+          <rect x="4" y="9" width="2" height="6" rx="1" fill="currentColor" />
+          <rect x="8" y="5" width="2" height="14" rx="1" fill="currentColor" />
+          <rect x="12" y="7" width="2" height="10" rx="1" fill="currentColor" />
+          <rect x="16" y="3" width="2" height="18" rx="1" fill="currentColor" />
+          <rect x="20" y="8" width="2" height="8" rx="1" fill="currentColor" />
+        </svg>
+      </button>
+    </div>
+    <!-- Dev mode toggle (only on localhost) -->
+    <div class="chat-devbar" id="chat-devbar" style="display:none;">
+      <label class="dev-toggle">
+        <input type="checkbox" id="dev-mode-toggle" onchange="toggleDevMode(this.checked)">
+        <span class="dev-toggle-label">Dev Mode</span>
+      </label>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+     Chat + Voice Styles
+     ═══════════════════════════════════════════════════════ -->
+  <style>
+    /* ── Language visibility ── */
+    body:not(.te) [lang="te"] {
+      display: none !important;
+    }
+
+    body.te [lang="en"] {
+      display: none !important;
+    }
+
+    /* ── Chat FAB ── */
+    .chat-fab {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      width: 56px;
+      height: 56px;
+      background: linear-gradient(135deg, var(--accent), #5856d6);
+      border: none;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 200;
+      box-shadow: 0 4px 20px rgba(0, 113, 227, 0.35);
+      transition: transform 0.2s, box-shadow 0.2s;
+      font-size: 24px;
+      color: white;
+      line-height: 1;
+    }
+
+    .chat-fab:hover {
+      transform: scale(1.08);
+      box-shadow: 0 6px 28px rgba(0, 113, 227, 0.45);
+    }
+
+    .chat-fab.open #fab-icon {
+      font-size: 22px;
+    }
+
+    /* ── Chat Panel ── */
+    .chat-panel {
+      position: fixed;
+      bottom: 92px;
+      right: 24px;
+      width: 380px;
+      height: 520px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15);
+      z-index: 200;
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .chat-panel.visible {
+      display: flex;
+    }
+
+    /* ── Chat Header ── */
+    .chat-header {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--bg-alt);
+    }
+
+    .chat-header-icon {
+      font-size: 28px;
+      line-height: 1;
+    }
+
+    .chat-header-text h4 {
+      font-size: 14px;
+      font-weight: 700;
+      margin: 0;
+    }
+
+    .chat-header-text p {
+      font-size: 11px;
+      color: var(--text-tertiary);
+      margin: 0;
+    }
+
+    /* ── Chat Messages ── */
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .chat-msg {
+      font-size: 14px;
+      line-height: 1.6;
+      max-width: 88%;
+      padding: 10px 14px;
+      border-radius: 14px;
+      word-wrap: break-word;
+    }
+
+    .chat-msg.system {
+      background: var(--bg-alt);
+      color: var(--text-secondary);
+      font-size: 13px;
+      text-align: center;
+      max-width: 100%;
+      border-radius: 10px;
+    }
+
+    .chat-msg.user {
+      align-self: flex-end;
+      background: var(--accent);
+      color: white;
+      border-bottom-right-radius: 4px;
+    }
+
+    .chat-msg.assistant {
+      align-self: flex-start;
+      background: var(--bg-alt);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-bottom-left-radius: 4px;
+    }
+
+    .chat-msg.error {
+      align-self: flex-start;
+      background: rgba(255, 59, 48, 0.08);
+      color: #ff3b30;
+      border: 1px solid rgba(255, 59, 48, 0.2);
+      font-size: 13px;
+      border-bottom-left-radius: 4px;
+    }
+
+    .chat-msg .msg-section {
+      margin-bottom: 8px;
+    }
+
+    .chat-msg .msg-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .chat-msg .msg-eli5 {
+      background: rgba(0, 113, 227, 0.06);
+      border-radius: 8px;
+      padding: 8px 12px;
+      margin-top: 8px;
+    }
+
+    .chat-msg .msg-heading {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--accent);
+      margin-bottom: 4px;
+    }
+
+    .chat-msg .msg-body p {
+      margin: 0 0 4px;
+    }
+
+    .chat-msg .msg-body ul {
+      margin: 4px 0 4px 16px;
+      padding: 0;
+    }
+
+    .chat-msg .msg-body li {
+      margin-bottom: 2px;
+    }
+
+    .chat-msg .msg-body code {
+      font-family: 'SF Mono', Menlo, monospace;
+      font-size: 12px;
+      background: var(--bg);
+      padding: 1px 5px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+    }
+
+    /* ── Typing Indicator ── */
+    .chat-typing {
+      display: flex;
+      gap: 4px;
+      padding: 4px 0;
+      align-items: center;
+      visibility: hidden;
+      height: 0;
+      overflow: hidden;
+    }
+
+    .chat-typing.visible {
+      visibility: visible;
+      height: auto;
+      padding: 8px 14px;
+    }
+
+    .chat-typing span {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--text-tertiary);
+      animation: typingBounce 1.4s infinite;
+    }
+
+    .chat-typing span:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    .chat-typing span:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+
+    @keyframes typingBounce {
+
+      0%,
+      60%,
+      100% {
+        opacity: 0.3;
+        transform: translateY(0);
+      }
+
+      30% {
+        opacity: 1;
+        transform: translateY(-4px);
+      }
+    }
+
+    /* ── Chat Input Area ── */
+    .chat-input-area {
+      padding: 10px 12px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 6px;
+      align-items: flex-end;
+      background: var(--bg);
+    }
+
+    .chat-input {
+      flex: 1;
+      min-height: 36px;
+      max-height: 80px;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 8px 14px;
+      font-size: 14px;
+      line-height: 1.4;
+      background: var(--bg-alt);
+      color: var(--text);
+      outline: none;
+      resize: none;
+      font-family: var(--font);
+      overflow-y: auto;
+    }
+
+    .chat-input:focus {
+      border-color: var(--accent);
+    }
+
+    .chat-mic,
+    .chat-action-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      color: var(--text-secondary);
+      transition: background 0.15s, color 0.15s;
+      flex-shrink: 0;
+    }
+
+    .chat-mic:hover,
+    .chat-action-btn:hover {
+      background: var(--bg-alt);
+      color: var(--accent);
+    }
+
+    /* ── Voice Overlay ── */
+    .voice-overlay {
+      position: absolute;
+      inset: 0;
+      background: var(--bg);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+      z-index: 10;
+    }
+
+    .voice-overlay.active {
+      display: flex;
+    }
+
+    .voice-orb-wrap {
+      position: relative;
+      width: 120px;
+      height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .voice-orb {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, var(--accent), #5856d6);
+      border-radius: 50%;
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+
+    .voice-orb-ring {
+      position: absolute;
+      inset: 0;
+      border: 3px solid var(--accent);
+      border-radius: 50%;
+      opacity: 0;
+    }
+
+    /* Voice states */
+    .voice-overlay[data-state="connecting"] .voice-orb {
+      animation: orbPulse 1.5s ease-in-out infinite;
+    }
+
+    .voice-overlay[data-state="listening"] .voice-orb {
+      box-shadow: 0 0 30px rgba(0, 113, 227, 0.3);
+    }
+
+    .voice-overlay[data-state="listening"] .voice-orb-ring {
+      opacity: 0.4;
+      animation: ringExpand 2s ease-in-out infinite;
+    }
+
+    .voice-overlay[data-state="speaking"] .voice-orb {
+      transform: scale(1.1);
+      box-shadow: 0 0 50px rgba(0, 113, 227, 0.5);
+      animation: orbSpeak 0.6s ease-in-out infinite alternate;
+    }
+
+    .voice-overlay[data-state="speaking"] .voice-orb-ring {
+      opacity: 0.6;
+      animation: ringExpand 1s ease-in-out infinite;
+    }
+
+    .voice-overlay[data-state="error"] .voice-orb {
+      background: linear-gradient(135deg, #ff3b30, #ff6b6b);
+    }
+
+    @keyframes orbPulse {
+
+      0%,
+      100% {
+        transform: scale(1);
+        opacity: 0.7;
+      }
+
+      50% {
+        transform: scale(1.05);
+        opacity: 1;
+      }
+    }
+
+    @keyframes ringExpand {
+      0% {
+        transform: scale(0.8);
+        opacity: 0.5;
+      }
+
+      100% {
+        transform: scale(1.3);
+        opacity: 0;
+      }
+    }
+
+    @keyframes orbSpeak {
+      0% {
+        transform: scale(1.05);
+      }
+
+      100% {
+        transform: scale(1.15);
+      }
+    }
+
+    .voice-status {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+
+    .voice-btn-row {
+      display: flex;
+      gap: 12px;
+    }
+
+    .voice-interrupt-btn,
+    .voice-end-btn {
+      padding: 10px 24px;
+      border-radius: 980px;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: opacity 0.15s;
+    }
+
+    .voice-interrupt-btn {
+      background: var(--bg-alt);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .voice-end-btn {
+      background: #ff3b30;
+      color: white;
+    }
+
+    .voice-interrupt-btn:hover,
+    .voice-end-btn:hover {
+      opacity: 0.85;
+    }
+
+    /* Hide interrupt when not speaking */
+    .voice-overlay:not([data-state="speaking"]) .voice-interrupt-btn {
+      display: none;
+    }
+
+    /* ── Dev Mode ── */
+    .chat-devbar {
+      padding: 6px 12px;
+      border-top: 1px solid var(--border);
+      background: var(--bg-alt);
+      display: none;
+      align-items: center;
+    }
+
+    .dev-toggle {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--text-tertiary);
+      cursor: pointer;
+    }
+
+    .dev-toggle input {
+      margin: 0;
+    }
+
+    .chat-devlog {
+      display: none;
+      max-height: 120px;
+      overflow-y: auto;
+      padding: 6px 12px;
+      font-family: 'SF Mono', Menlo, monospace;
+      font-size: 11px;
+      line-height: 1.4;
+      background: #1a1a2e;
+      color: #a0a0a0;
+      border-top: 1px solid var(--border);
+    }
+
+    body.dev-mode .chat-devlog {
+      display: block;
+    }
+
+    .devlog-entry {
+      padding: 1px 0;
+    }
+
+    .devlog-entry.err {
+      color: #ff6b6b;
+    }
+
+    .devlog-entry.ok {
+      color: #4ecdc4;
+    }
+
+    .devlog-ts {
+      color: #666;
+      margin-right: 8px;
+      font-size: 10px;
+    }
+
+    /* ── Language Selector (floating top-left) ── */
+    .lang-bar {
+      position: fixed;
+      top: 60px;
+      left: 24px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      z-index: 101;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .lang-select {
+      font-size: 12px;
+      padding: 4px 8px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg);
+      color: var(--text);
+      cursor: pointer;
+      outline: none;
+    }
+
+    @media (max-width: 480px) {
+      .chat-panel {
+        width: calc(100vw - 32px);
+        right: 16px;
+        bottom: 88px;
+        height: 60vh;
+      }
+
+      .lang-bar {
+        top: 56px;
+        left: 12px;
+      }
+    }
+  </style>
+
+  <!-- ═══════════════════════════════════════════════════════
+     Scroll Animations + Language + Chat + Voice JS
+     ═══════════════════════════════════════════════════════ -->
+  <script>
+    /* ── Scroll fade-in observer ── */
+    var observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) e.target.classList.add('visible');
+      });
+    }, { threshold: 0.1 });
+    document.querySelectorAll('.fade-in').forEach(function (el) { observer.observe(el); });
+
+    /* ── Language ──────────────────────────────────────────── */
+    function setLang(lang) {
+      document.body.className = lang === 'te' ? 'te' : '';
+      var picker = document.getElementById('lang-picker');
+      if (picker) picker.value = lang;
+      try { localStorage.setItem('ch-lang', lang); } catch (e) { }
+    }
+    try {
+      var _sl = localStorage.getItem('ch-lang');
+      if (_sl === 'te') setLang('te');
+    } catch (e) { }
+
+    /* ── Dev Mode ─────────────────────────────────────────── */
+    var isLocal = location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.protocol === 'file:';
+    var devMode = false;
+
+    if (isLocal) {
+      var devbar = document.getElementById('chat-devbar');
+      if (devbar) devbar.style.display = 'flex';
+      try { if (localStorage.getItem('ch-dev-mode') === '1') toggleDevMode(true); } catch (e) { }
+    }
+
+    function toggleDevMode(on) {
+      devMode = on;
+      document.body.classList.toggle('dev-mode', on);
+      var cb = document.getElementById('dev-mode-toggle');
+      if (cb) cb.checked = on;
+      try { localStorage.setItem('ch-dev-mode', on ? '1' : '0'); } catch (e) { }
+      if (on) devLog('ok', 'Dev mode enabled. API errors will show full details here.');
+    }
+
+    function devLog(level, msg) {
+      if (!devMode) return;
+      var log = document.getElementById('chat-devlog');
+      if (!log) return;
+      var entry = document.createElement('div');
+      entry.className = 'devlog-entry' + (level === 'err' ? ' err' : level === 'ok' ? ' ok' : '');
+      var ts = document.createElement('span');
+      ts.className = 'devlog-ts';
+      ts.textContent = new Date().toLocaleTimeString();
+      entry.appendChild(ts);
+      entry.appendChild(document.createTextNode(msg));
+      log.appendChild(entry);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    /* ── Chat ──────────────────────────────────────────────── */
+    var WORKER_URL = 'https://clipboard-vault-chat.argyu.workers.dev';
+    var PROXY_URL = isLocal ? 'http://localhost:5193/v1/messages' : WORKER_URL + '/v1/messages';
+
+    var SYSTEM_PROMPT = 'You are a friendly help assistant embedded in the Clipboard Vault user guide '
+      + '\u2014 a macOS menu bar clipboard manager app (v5.1) built by Arjun Donthala.\n\n'
+      + 'Your job is to answer questions about this app in a warm, clear, non-technical way. You know everything about:\n'
+      + '- Features: menu bar icon, global hotkey (Cmd+Shift+V), search, smart categories (url/email/code/path/number), pinning, two-panel UI, notes\n'
+      + '- Privacy: 100% offline, zero servers, no analytics, no tracking, no accounts, no internet connection\n'
+      + '- Security: hybrid X25519 + ML-KEM-768 ECIES encryption (AES-256-GCM), private keys in macOS Keychain (hardware-protected on Apple Silicon), public keys on disk, Touch ID + password biometric lock, anti-debug detection, SIP check\n'
+      + '- Data storage: ~/Library/Application Support/ClipboardVault/ (fully encrypted, no plaintext on disk), encrypted images (.enc files), private keys in macOS Keychain (never synced to iCloud, never in backups)\n'
+      + '- All content fully encrypted on disk \u2014 no plaintext preview stored. Search decrypts each item on the fly.\n'
+      + '- Setup: needs Accessibility permission for global hotkey (optional). macOS 12+\n'
+      + '- Keyboard shortcuts: Cmd+Shift+V (toggle), Cmd+F (search), arrows (navigate), Return (paste), Escape (close)\n'
+      + '- Auto-delete: configurable retention (1 day, 1 week, 1 month, 3 months, forever)\n'
+      + '- Universal Clipboard: captures cross-device pastes from iPhone via Handoff\n\n'
+      + 'Response format:\n'
+      + 'Always structure your response in exactly this format:\n'
+      + '---\n'
+      + 'First, give a clear standard explanation. Use **bold** for key terms. Use bullet points (- ) for lists. Use `backticks` for code or technical terms.\n'
+      + '\n'
+      + 'ELI5:\n'
+      + 'Then give an "Explain Like I am 5" version using a real-world physical analogy.\n'
+      + '---\n\n'
+      + 'ELI5 rules (CRITICAL):\n'
+      + '- NEVER use the word being explained in the ELI5. If someone asks "what is a clipboard", do NOT say "a clipboard is..." in the ELI5.\n'
+      + '- Always use a physical, tangible, real-world analogy a child would understand. Compare to things like: a notebook, a sticky note, a drawer, a box, a pocket, a jar, a shelf, a photo album, a diary, a whiteboard.\n'
+      + '- Keep ELI5 to 2-3 sentences max. Make it vivid and specific.\n\n'
+      + 'Other rules:\n'
+      + '1. Only answer questions related to Clipboard Vault, clipboard managers, macOS privacy/security, or general computing concepts that help users understand the app.\n'
+      + '2. If someone asks something completely unrelated, politely redirect (no ELI5 needed for redirects).\n'
+      + '3. Keep the standard explanation to 2-4 sentences.\n'
+      + '4. If the user asks in Telugu, respond fully in Telugu. The ELI5 section header should be "\u0C38\u0C30\u0C33\u0C02\u0C17\u0C3E:" instead of "ELI5:".\n'
+      + '5. Be warm and approachable. Never make up features that do not exist.';
+
+    var chatHistory = [];
+
+    function toggleChat() {
+      var panel = document.getElementById('chat-panel');
+      var fab = document.getElementById('chat-fab');
+      var isOpen = panel.classList.toggle('visible');
+      fab.classList.toggle('open', isOpen);
+      document.getElementById('fab-icon').textContent = isOpen ? '\u2715' : '\uD83D\uDCAC';
+      if (isOpen) {
+        var ci = document.getElementById('chat-input');
+        if (ci && ci.offsetParent) ci.focus();
+      }
+    }
+
+    function updateActionButtons() {
+      var hasText = document.getElementById('chat-input').value.trim().length > 0;
+      document.getElementById('chat-send').style.display = hasText ? 'flex' : 'none';
+      document.getElementById('chat-live').style.display = hasText ? 'none' : 'flex';
+    }
+
+    function handleChatKey(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+      var t = e.target;
+      setTimeout(function () {
+        t.style.height = 'auto';
+        t.style.height = Math.min(t.scrollHeight, 80) + 'px';
+        updateActionButtons();
+      }, 0);
+    }
+
+    function addMessage(role, text) {
+      var msgs = document.getElementById('chat-messages');
+      var indicator = document.getElementById('typing-indicator');
+      var div = document.createElement('div');
+      div.className = 'chat-msg ' + role;
+
+      if (role === 'assistant') {
+        renderFormatted(div, text);
+      } else {
+        div.textContent = text;
+      }
+
+      msgs.insertBefore(div, indicator);
+      msgs.scrollTop = msgs.scrollHeight;
+    }
+
+    function renderFormatted(container, text) {
+      text = text.replace(/^-{3,}\s*$/gm, '');
+      var eli5Match = text.match(/\n\s*(ELI5|\u0C38\u0C30\u0C33\u0C02\u0C17\u0C3E)\s*:\s*\n?/i);
+      var mainText, eli5Text;
+
+      if (eli5Match) {
+        mainText = text.substring(0, eli5Match.index).trim();
+        eli5Text = text.substring(eli5Match.index + eli5Match[0].length).trim();
+      } else {
+        mainText = text.trim();
+        eli5Text = null;
+      }
+
+      var mainSection = document.createElement('div');
+      mainSection.className = 'msg-section';
+      var mainBody = document.createElement('div');
+      mainBody.className = 'msg-body';
+      renderMarkdownLines(mainBody, mainText);
+      mainSection.appendChild(mainBody);
+      container.appendChild(mainSection);
+
+      if (eli5Text) {
+        var eli5Section = document.createElement('div');
+        eli5Section.className = 'msg-section msg-eli5';
+        var eli5Heading = document.createElement('div');
+        eli5Heading.className = 'msg-heading';
+        eli5Heading.textContent = /[\u0C00-\u0C7F]/.test(eli5Text) ? '\u0C38\u0C30\u0C33\u0C02\u0C17\u0C3E \u0C1A\u0C46\u0C2A\u0C4D\u0C2A\u0C3E\u0C32\u0C02\u0C1F\u0C47' : 'In simple terms';
+        eli5Section.appendChild(eli5Heading);
+        var eli5Body = document.createElement('div');
+        eli5Body.className = 'msg-body';
+        renderMarkdownLines(eli5Body, eli5Text);
+        eli5Section.appendChild(eli5Body);
+        container.appendChild(eli5Section);
+      }
+    }
+
+    function renderMarkdownLines(container, text) {
+      var lines = text.split('\n');
+      var currentUl = null;
+
+      for (var i = 0; i < lines.length; i++) {
+        var line = lines[i];
+
+        if (/^\s*[-\u2022]\s+/.test(line)) {
+          if (!currentUl) {
+            currentUl = document.createElement('ul');
+            container.appendChild(currentUl);
+          }
+          var li = document.createElement('li');
+          renderInline(li, line.replace(/^\s*[-\u2022]\s+/, ''));
+          currentUl.appendChild(li);
+          continue;
+        }
+
+        currentUl = null;
+
+        if (line.trim() === '') continue;
+
+        var p = document.createElement('p');
+        p.style.margin = '0 0 4px';
+        renderInline(p, line);
+        container.appendChild(p);
+      }
+    }
+
+    function renderInline(el, text) {
+      var parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`)/g);
+      for (var i = 0; i < parts.length; i++) {
+        var part = parts[i];
+        if (!part) continue;
+        if (part.startsWith('**') && part.endsWith('**')) {
+          var strong = document.createElement('strong');
+          strong.textContent = part.slice(2, -2);
+          el.appendChild(strong);
+        } else if (part.startsWith('`') && part.endsWith('`')) {
+          var code = document.createElement('code');
+          code.textContent = part.slice(1, -1);
+          el.appendChild(code);
+        } else {
+          el.appendChild(document.createTextNode(part));
+        }
+      }
+    }
+
+    function showTyping(show) {
+      var el = document.getElementById('typing-indicator');
+      if (el) el.classList.toggle('visible', show);
+      if (show) {
+        var msgs = document.getElementById('chat-messages');
+        msgs.scrollTop = msgs.scrollHeight;
+      }
+    }
+
+    async function sendMessage() {
+      var input = document.getElementById('chat-input');
+      var text = input.value.trim();
+      if (!text) return;
+
+      input.value = '';
+      input.style.height = 'auto';
+      updateActionButtons();
+      addMessage('user', text);
+      chatHistory.push({ role: 'user', content: text });
+
+      var sendBtn = document.getElementById('chat-send');
+      input.disabled = true;
+      sendBtn.disabled = true;
+      showTyping(true);
+
+      var payload = {
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 512,
+        system: SYSTEM_PROMPT,
+        messages: chatHistory.slice(-10)
+      };
+
+      devLog('', 'POST ' + PROXY_URL);
+      devLog('', 'model=' + payload.model + ' msgs=' + payload.messages.length);
+
+      try {
+        var resp = await fetch(PROXY_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (!resp.ok) {
+          var errBody = '';
+          try { errBody = await resp.text(); } catch (e2) { }
+          devLog('err', resp.status + ' ' + resp.statusText);
+          devLog('err', errBody);
+
+          var userMsg = 'Something went wrong. Please try again.';
+          if (devMode) {
+            try {
+              var errJson = JSON.parse(errBody);
+              var detail = (errJson.error && errJson.error.message) || errBody;
+              userMsg = resp.status + ': ' + detail;
+            } catch (e3) {
+              userMsg = resp.status + ': ' + (errBody || resp.statusText);
+            }
+          }
+          addMessage('error', userMsg);
+          chatHistory.pop();
+          return;
+        }
+
+        var data = await resp.json();
+        devLog('ok', 'Response: ' + resp.status + ' ' + (data.usage ? 'in=' + data.usage.input_tokens + ' out=' + data.usage.output_tokens : ''));
+        var reply = (data.content && data.content[0] && data.content[0].text) || 'Sorry, I could not generate a response.';
+        addMessage('assistant', reply);
+        chatHistory.push({ role: 'assistant', content: reply });
+
+      } catch (e) {
+        devLog('err', 'Fetch failed: ' + e.message);
+        addMessage('error', devMode ? 'Fetch failed: ' + e.message : 'Cannot connect. Is the proxy running?');
+        chatHistory.pop();
+      } finally {
+        showTyping(false);
+        input.disabled = false;
+        sendBtn.disabled = false;
+        input.focus();
+      }
+    }
+
+    /* ── Mic Input (speech-to-text for text mode) ─────────── */
+    var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    var micRecognition = null;
+    var micActive = false;
+
+    function toggleMicInput() {
+      if (micActive) {
+        stopMicInput();
+      } else {
+        startMicInput();
+      }
+    }
+
+    function startMicInput() {
+      if (!SpeechRecognition) {
+        devLog('err', 'SpeechRecognition not supported in this browser');
+        return;
+      }
+      if (!micRecognition) {
+        micRecognition = new SpeechRecognition();
+        micRecognition.continuous = false;
+        micRecognition.interimResults = true;
+      }
+      micRecognition.lang = document.body.classList.contains('te') ? 'te-IN' : 'en-US';
+      micActive = true;
+      var micBtn = document.getElementById('chat-mic');
+      micBtn.style.color = '#ff3b30';
+
+      var finalTranscript = '';
+
+      micRecognition.onresult = function (e) {
+        var interim = '';
+        for (var i = e.resultIndex; i < e.results.length; i++) {
+          if (e.results[i].isFinal) {
+            finalTranscript += e.results[i][0].transcript;
+          } else {
+            interim += e.results[i][0].transcript;
+          }
+        }
+        document.getElementById('chat-input').value = (finalTranscript + interim).trim();
+      };
+
+      micRecognition.onend = function () {
+        micActive = false;
+        micBtn.style.color = '';
+        var text = finalTranscript.trim();
+        if (text) {
+          document.getElementById('chat-input').value = text;
+          sendMessage();
+        }
+      };
+
+      micRecognition.onerror = function (e) {
+        micActive = false;
+        micBtn.style.color = '';
+        if (e.error !== 'aborted' && e.error !== 'no-speech') {
+          devLog('err', 'Mic error: ' + e.error);
+        }
+      };
+
+      micRecognition.start();
+    }
+
+    function stopMicInput() {
+      if (micRecognition && micActive) {
+        micRecognition.stop();
+      }
+    }
+
+    /* ── Voice Mode (Gemini Live) ─────────────────────────── */
+    var LIVE_WS_URL = isLocal ? 'ws://localhost:5194' : WORKER_URL.replace('https://', 'wss://');
+    var liveWs = null;
+    var liveMicStream = null;
+    var liveAudioCtx = null;
+    var liveWorklet = null;
+    var livePlaybackCtx = null;
+    var liveNextPlayTime = 0;
+    var liveInterrupted = false;
+    var liveEnding = false;
+    var liveConnected = false;
+
+    function setVoiceState(state) {
+      var overlay = document.getElementById('voice-overlay');
+      var status = document.getElementById('voice-status');
+      overlay.setAttribute('data-state', state);
+      if (state === 'connecting') status.textContent = 'Connecting...';
+      else if (state === 'listening') status.textContent = 'Listening...';
+      else if (state === 'speaking') status.textContent = 'Speaking...';
+      else if (state === 'error') status.textContent = 'Connection failed. Tap End to close.';
+      else status.textContent = '';
+    }
+
+    function toggleVoice() {
+      var overlay = document.getElementById('voice-overlay');
+      if (overlay.classList.contains('active')) {
+        endLiveSession();
+      } else {
+        startLiveSession();
+      }
+    }
+
+    async function startLiveSession() {
+      liveEnding = false;
+      liveConnected = false;
+      var overlay = document.getElementById('voice-overlay');
+      overlay.classList.add('active');
+      setVoiceState('connecting');
+      devLog('', 'Voice: starting Gemini Live session');
+
+      try {
+        liveWs = new WebSocket(LIVE_WS_URL);
+        liveWs.binaryType = 'blob';
+
+        liveWs.onopen = function () {
+          devLog('ok', 'Voice: WebSocket connected to proxy');
+        };
+
+        liveWs.onmessage = async function (evt) {
+          try {
+            var text = typeof evt.data === 'string' ? evt.data : await evt.data.text();
+            var msg = JSON.parse(text);
+
+            if (msg.error) {
+              devLog('err', 'Voice: Gemini error: ' + msg.error);
+              setVoiceState('error');
+              cleanupLiveResources();
+              return;
+            }
+
+            if (msg.setupComplete) {
+              liveConnected = true;
+              devLog('ok', 'Voice: Gemini setup complete');
+              startMicCapture();
+              return;
+            }
+
+            if (msg.serverContent) {
+              var sc = msg.serverContent;
+
+              if (sc.turnComplete) {
+                devLog('', 'Voice: turn complete');
+                liveInterrupted = false;
+                setVoiceState('listening');
+                return;
+              }
+
+              if (sc.modelTurn && sc.modelTurn.parts) {
+                for (var i = 0; i < sc.modelTurn.parts.length; i++) {
+                  var part = sc.modelTurn.parts[i];
+                  if (part.inlineData && part.inlineData.data) {
+                    setVoiceState('speaking');
+                    queueAudioChunk(part.inlineData.data);
+                  }
+                }
+              }
+            }
+          } catch (e) {
+            devLog('err', 'Voice: parse error: ' + e.message);
+          }
+        };
+
+        liveWs.onerror = function (e) {
+          devLog('err', 'Voice: WebSocket error');
+        };
+
+        liveWs.onclose = function (e) {
+          devLog('', 'Voice: WebSocket closed (code=' + e.code + ')');
+          if (!liveEnding) {
+            setVoiceState('error');
+            cleanupLiveResources();
+          }
+        };
+
+      } catch (e) {
+        devLog('err', 'Voice: failed to connect: ' + e.message);
+        setVoiceState('error');
+      }
+    }
+
+    async function startMicCapture() {
+      setVoiceState('listening');
+
+      try {
+        liveMicStream = await navigator.mediaDevices.getUserMedia({ audio: { sampleRate: 16000, channelCount: 1 } });
+        liveAudioCtx = new AudioContext({ sampleRate: 16000 });
+        var source = liveAudioCtx.createMediaStreamSource(liveMicStream);
+
+        var processor = liveAudioCtx.createScriptProcessor(4096, 1, 1);
+        processor.onaudioprocess = function (e) {
+          if (!liveWs || liveWs.readyState !== WebSocket.OPEN) return;
+          var overlay = document.getElementById('voice-overlay');
+          if (overlay.getAttribute('data-state') === 'speaking') return;
+          var input = e.inputBuffer.getChannelData(0);
+
+          var pcm16 = new Int16Array(input.length);
+          for (var i = 0; i < input.length; i++) {
+            var s = Math.max(-1, Math.min(1, input[i]));
+            pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+          }
+
+          var bytes = new Uint8Array(pcm16.buffer);
+          var b64 = btoa(String.fromCharCode.apply(null, bytes));
+
+          liveWs.send(JSON.stringify({
+            realtimeInput: {
+              mediaChunks: [{
+                mimeType: 'audio/pcm;rate=16000',
+                data: b64
+              }]
+            }
+          }));
+        };
+
+        var silentGain = liveAudioCtx.createGain();
+        silentGain.gain.value = 0;
+        silentGain.connect(liveAudioCtx.destination);
+        source.connect(processor);
+        processor.connect(silentGain);
+        liveWorklet = processor;
+
+        devLog('ok', 'Voice: mic capture started (16kHz PCM)');
+      } catch (e) {
+        devLog('err', 'Voice: mic access failed: ' + e.message);
+        document.getElementById('voice-status').textContent = 'Mic access denied. Tap End to close.';
+        setVoiceState('error');
+      }
+    }
+
+    function queueAudioChunk(b64Data) {
+      if (liveInterrupted) return;
+      var raw = atob(b64Data);
+      var bytes = new Uint8Array(raw.length);
+      for (var i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
+
+      var int16 = new Int16Array(bytes.buffer);
+      var float32 = new Float32Array(int16.length);
+      for (var i = 0; i < int16.length; i++) {
+        float32[i] = int16[i] / 32768;
+      }
+
+      if (!livePlaybackCtx) {
+        livePlaybackCtx = new AudioContext({ sampleRate: 24000 });
+        liveNextPlayTime = 0;
+      }
+
+      var ctx = livePlaybackCtx;
+      var buffer = ctx.createBuffer(1, float32.length, 24000);
+      buffer.getChannelData(0).set(float32);
+
+      var source = ctx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(ctx.destination);
+
+      var startAt = Math.max(liveNextPlayTime, ctx.currentTime);
+      source.start(startAt);
+      liveNextPlayTime = startAt + buffer.duration;
+    }
+
+    function cleanupLiveResources() {
+      if (liveMicStream) {
+        liveMicStream.getTracks().forEach(function (t) { t.stop(); });
+        liveMicStream = null;
+      }
+      if (liveWorklet) {
+        liveWorklet.disconnect();
+        liveWorklet = null;
+      }
+      if (liveAudioCtx) {
+        liveAudioCtx.close().catch(function () { });
+        liveAudioCtx = null;
+      }
+
+      liveNextPlayTime = 0;
+      if (livePlaybackCtx) {
+        livePlaybackCtx.close().catch(function () { });
+        livePlaybackCtx = null;
+      }
+    }
+
+    function interruptLive() {
+      devLog('', 'Voice: interrupting playback');
+      liveInterrupted = true;
+      liveNextPlayTime = 0;
+      if (livePlaybackCtx) {
+        livePlaybackCtx.close().catch(function () { });
+        livePlaybackCtx = null;
+      }
+      setVoiceState('listening');
+    }
+
+    function endLiveSession() {
+      liveEnding = true;
+      devLog('', 'Voice: ending session');
+
+      if (liveWs) {
+        liveWs.onclose = null;
+        liveWs.onerror = null;
+        liveWs.close();
+        liveWs = null;
+      }
+
+      cleanupLiveResources();
+
+      var overlay = document.getElementById('voice-overlay');
+      overlay.classList.remove('active');
+      setVoiceState('idle');
+      liveConnected = false;
+    }
+  </script>
+
+</body>
+
+</html>
