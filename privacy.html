@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy Policy — Clipboard Vault</title>
+<style>
+  :root {
+    --bg: #fafafa;
+    --card: #ffffff;
+    --text: #1d1d1f;
+    --secondary: #6e6e73;
+    --accent: #0071e3;
+    --border: #e5e5ea;
+    --green: #34c759;
+    --section-bg: #f5f5f7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #000000;
+      --card: #1c1c1e;
+      --text: #f5f5f7;
+      --secondary: #a1a1a6;
+      --accent: #2997ff;
+      --border: #38383a;
+      --green: #30d158;
+      --section-bg: #1c1c1e;
+    }
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+  .hero {
+    text-align: center;
+    padding: 80px 24px 60px;
+    background: linear-gradient(180deg, var(--section-bg) 0%, var(--bg) 100%);
+  }
+  .hero-icon {
+    width: 80px; height: 80px;
+    background: linear-gradient(135deg, var(--accent), #00c7be);
+    border-radius: 20px;
+    display: inline-flex; align-items: center; justify-content: center;
+    margin-bottom: 24px;
+    box-shadow: 0 8px 30px rgba(0,113,227,0.2);
+  }
+  .hero-icon svg { width: 40px; height: 40px; fill: white; }
+  .hero h1 {
+    font-size: 44px; font-weight: 700;
+    letter-spacing: -0.5px;
+    margin-bottom: 12px;
+  }
+  .hero p {
+    font-size: 18px; color: var(--secondary);
+    max-width: 500px; margin: 0 auto;
+  }
+  .container {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 0 24px 80px;
+  }
+  .tldr {
+    background: linear-gradient(135deg, rgba(0,113,227,0.08), rgba(52,199,89,0.08));
+    border-radius: 16px;
+    padding: 28px 32px;
+    margin-bottom: 48px;
+    border: 1px solid var(--border);
+  }
+  .tldr h2 {
+    font-size: 15px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+  .tldr-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .tldr-item {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 15px; font-weight: 500;
+  }
+  .tldr-item .check {
+    width: 24px; height: 24px; border-radius: 50%;
+    background: var(--green);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .tldr-item .check svg { width: 14px; height: 14px; fill: white; }
+  .updated {
+    text-align: center;
+    font-size: 13px;
+    color: var(--secondary);
+    margin-bottom: 48px;
+  }
+  section { margin-bottom: 40px; }
+  section h2 {
+    font-size: 24px; font-weight: 600;
+    margin-bottom: 16px;
+    letter-spacing: -0.3px;
+  }
+  section p, section li {
+    font-size: 16px;
+    color: var(--secondary);
+    margin-bottom: 12px;
+  }
+  section ul {
+    list-style: none;
+    padding: 0;
+  }
+  section li {
+    padding-left: 24px;
+    position: relative;
+  }
+  section li::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 10px;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    opacity: 0.5;
+  }
+  .highlight-card {
+    background: var(--section-bg);
+    border-radius: 12px;
+    padding: 24px 28px;
+    border: 1px solid var(--border);
+    margin: 16px 0;
+  }
+  .highlight-card h3 {
+    font-size: 15px; font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .highlight-card p {
+    font-size: 14px;
+    margin-bottom: 0;
+  }
+  code {
+    font-family: 'SF Mono', Menlo, monospace;
+    font-size: 13px;
+    background: var(--section-bg);
+    padding: 2px 8px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+  }
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 48px 0;
+  }
+  .footer {
+    text-align: center;
+    padding: 40px 24px;
+    font-size: 13px;
+    color: var(--secondary);
+    border-top: 1px solid var(--border);
+  }
+  .footer a { color: var(--accent); text-decoration: none; }
+  .footer a:hover { text-decoration: underline; }
+  @media (max-width: 600px) {
+    .hero h1 { font-size: 32px; }
+    .tldr-grid { grid-template-columns: 1fr; }
+    .hero { padding: 60px 24px 40px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-icon">
+    <svg viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1s3.1 1.39 3.1 3.1v2z"/></svg>
+  </div>
+  <h1>Privacy Policy</h1>
+  <p>Clipboard Vault is built with privacy as the foundation, not an afterthought.</p>
+</div>
+
+<div class="container">
+
+  <div class="tldr">
+    <h2>The Short Version</h2>
+    <div class="tldr-grid">
+      <div class="tldr-item">
+        <div class="check"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div>
+        <span>No data collection</span>
+      </div>
+      <div class="tldr-item">
+        <div class="check"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div>
+        <span>No analytics or tracking</span>
+      </div>
+      <div class="tldr-item">
+        <div class="check"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div>
+        <span>No network requests</span>
+      </div>
+      <div class="tldr-item">
+        <div class="check"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div>
+        <span>Everything stays on your Mac</span>
+      </div>
+    </div>
+  </div>
+
+  <p class="updated">Last updated: March 8, 2026</p>
+
+  <section>
+    <h2>Overview</h2>
+    <p>Clipboard Vault is a macOS clipboard manager developed by Arjun Donthala. It operates entirely offline. Your data never leaves your Mac — period.</p>
+  </section>
+
+  <section>
+    <h2>Data Stored Locally</h2>
+    <p>The following data is stored on your device and nowhere else:</p>
+    <ul>
+      <li>Clipboard history — text, images, files, and RTF content you copy</li>
+      <li>Notes you attach to clipboard items</li>
+      <li>App settings and preferences</li>
+      <li>Encryption keys (in your macOS Keychain)</li>
+    </ul>
+    <div class="highlight-card">
+      <h3>Storage Location</h3>
+      <p>All data is stored in <code>~/Library/Application Support/ClipboardVault/</code></p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Encryption</h2>
+    <p>All clipboard content is encrypted at rest using post-quantum hybrid encryption. No plaintext clipboard content is ever written to disk.</p>
+    <ul>
+      <li><strong>AES-256-GCM</strong> — authenticated encryption</li>
+      <li><strong>X25519</strong> — elliptic curve key agreement</li>
+      <li><strong>ML-KEM-768</strong> — post-quantum key encapsulation</li>
+    </ul>
+    <p>Private keys are stored in the macOS Keychain, protected by the Secure Enclave where available.</p>
+  </section>
+
+  <section>
+    <h2>Authentication</h2>
+    <p>Clipboard Vault uses Touch ID and macOS password authentication to protect access to your history. Authentication is handled entirely by macOS on your device. No credentials are transmitted or stored by the app.</p>
+  </section>
+
+  <section>
+    <h2>Third-Party Services</h2>
+    <p>Clipboard Vault uses no third-party analytics, tracking, advertising, or cloud services. Zero network requests are made by the app.</p>
+  </section>
+
+  <section>
+    <h2>Data Sharing</h2>
+    <p>We do not share, sell, rent, or transfer any user data to any third party. There is no data to share — everything stays on your device.</p>
+  </section>
+
+  <section>
+    <h2>Data Deletion</h2>
+    <p>You can delete individual items within the app, or remove all data by deleting:</p>
+    <div class="highlight-card">
+      <p><code>~/Library/Application Support/ClipboardVault/</code></p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Children's Privacy</h2>
+    <p>The app does not collect any data from anyone, including children under 13.</p>
+  </section>
+
+  <section>
+    <h2>Changes</h2>
+    <p>If this policy is updated, the revised version will be posted at this URL with an updated date.</p>
+  </section>
+
+  <div class="divider"></div>
+
+  <section>
+    <h2>Contact</h2>
+    <p>Questions about this privacy policy? Reach out at <a href="mailto:arjunmitrareddy@icloud.com" style="color: var(--accent); text-decoration: none;">arjunmitrareddy@icloud.com</a></p>
+  </section>
+
+</div>
+
+<div class="footer">
+  © 2026 Arjun Donthala. All rights reserved.<br>
+  <a href="support.html">Support</a>
+</div>
+
+</body>
+</html>

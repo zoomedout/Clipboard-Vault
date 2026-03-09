@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Your Privacy Choices — Clipboard Vault</title>
+<style>
+  :root {
+    --bg: #fafafa;
+    --card: #ffffff;
+    --text: #1d1d1f;
+    --secondary: #6e6e73;
+    --accent: #0071e3;
+    --border: #e5e5ea;
+    --green: #34c759;
+    --section-bg: #f5f5f7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #000000;
+      --card: #1c1c1e;
+      --text: #f5f5f7;
+      --secondary: #a1a1a6;
+      --accent: #2997ff;
+      --border: #38383a;
+      --green: #30d158;
+      --section-bg: #1c1c1e;
+    }
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+  .hero {
+    text-align: center;
+    padding: 80px 24px 60px;
+    background: linear-gradient(180deg, var(--section-bg) 0%, var(--bg) 100%);
+  }
+  .hero-icon {
+    width: 80px; height: 80px;
+    background: linear-gradient(135deg, #34c759, #00c7be);
+    border-radius: 20px;
+    display: inline-flex; align-items: center; justify-content: center;
+    margin-bottom: 24px;
+    box-shadow: 0 8px 30px rgba(52,199,89,0.2);
+  }
+  .hero-icon svg { width: 40px; height: 40px; fill: white; }
+  .hero h1 {
+    font-size: 44px; font-weight: 700;
+    letter-spacing: -0.5px;
+    margin-bottom: 12px;
+  }
+  .hero p {
+    font-size: 18px; color: var(--secondary);
+    max-width: 520px; margin: 0 auto;
+  }
+  .container {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 0 24px 80px;
+  }
+  .banner {
+    background: linear-gradient(135deg, rgba(52,199,89,0.1), rgba(0,199,190,0.1));
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px;
+    text-align: center;
+    margin-bottom: 48px;
+  }
+  .banner .shield {
+    width: 56px; height: 56px;
+    background: var(--green);
+    border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    margin-bottom: 16px;
+  }
+  .banner .shield svg { width: 28px; height: 28px; fill: white; }
+  .banner h2 {
+    font-size: 22px; font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .banner p {
+    font-size: 16px; color: var(--secondary);
+    max-width: 460px; margin: 0 auto;
+  }
+
+  .choice-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 28px 32px;
+    margin-bottom: 16px;
+    display: flex; gap: 20px; align-items: flex-start;
+  }
+  .choice-icon {
+    width: 44px; height: 44px;
+    background: var(--section-bg);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .choice-icon svg { width: 22px; height: 22px; fill: var(--accent); }
+  .choice-content h3 {
+    font-size: 17px; font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .choice-content p {
+    font-size: 15px; color: var(--secondary);
+  }
+  code {
+    font-family: 'SF Mono', Menlo, monospace;
+    font-size: 13px;
+    background: var(--section-bg);
+    padding: 2px 8px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+  }
+
+  section { margin-top: 48px; }
+  section h2 {
+    font-size: 24px; font-weight: 600;
+    margin-bottom: 16px;
+    letter-spacing: -0.3px;
+  }
+  section p {
+    font-size: 16px; color: var(--secondary);
+    margin-bottom: 12px;
+  }
+
+  .footer {
+    text-align: center;
+    padding: 40px 24px;
+    font-size: 13px;
+    color: var(--secondary);
+    border-top: 1px solid var(--border);
+    margin-top: 60px;
+  }
+  .footer a { color: var(--accent); text-decoration: none; }
+  .footer a:hover { text-decoration: underline; }
+
+  @media (max-width: 600px) {
+    .hero h1 { font-size: 32px; }
+    .hero { padding: 60px 24px 40px; }
+    .choice-card { flex-direction: column; gap: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-icon">
+    <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>
+  </div>
+  <h1>Your Privacy Choices</h1>
+  <p>You have complete control over your data in Clipboard Vault.</p>
+</div>
+
+<div class="container">
+
+  <div class="banner">
+    <div class="shield">
+      <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+    </div>
+    <h2>No Choices Needed</h2>
+    <p>Clipboard Vault collects zero personal data, makes zero network requests, and uses zero tracking. There's nothing to opt out of because we never opted you in.</p>
+  </div>
+
+  <h2 style="font-size: 24px; font-weight: 600; margin-bottom: 20px;">What You Can Control</h2>
+
+  <div class="choice-card">
+    <div class="choice-icon">
+      <svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+    </div>
+    <div class="choice-content">
+      <h3>Delete Individual Items</h3>
+      <p>Right-click any clip in the history panel and choose Delete, or swipe to remove it. Deleted items are permanently erased.</p>
+    </div>
+  </div>
+
+  <div class="choice-card">
+    <div class="choice-icon">
+      <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+    </div>
+    <div class="choice-content">
+      <h3>Clear All History</h3>
+      <p>Open Settings within the app and choose "Clear History" to permanently delete all unpinned clipboard items at once.</p>
+    </div>
+  </div>
+
+  <div class="choice-card">
+    <div class="choice-icon">
+      <svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
+    </div>
+    <div class="choice-content">
+      <h3>Auto-Delete by Age</h3>
+      <p>Configure automatic deletion of old clips in Settings. Choose from 1 day, 1 week, 1 month, 3 months, or keep forever.</p>
+    </div>
+  </div>
+
+  <div class="choice-card">
+    <div class="choice-icon">
+      <svg viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"/></svg>
+    </div>
+    <div class="choice-content">
+      <h3>Disk Space Limits</h3>
+      <p>Set a maximum disk space for stored images and files. When the limit is reached, the oldest unpinned media is automatically removed.</p>
+    </div>
+  </div>
+
+  <div class="choice-card">
+    <div class="choice-icon">
+      <svg viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1s3.1 1.39 3.1 3.1v2z"/></svg>
+    </div>
+    <div class="choice-content">
+      <h3>Lock & Authentication</h3>
+      <p>Configure auto-lock delay and choose between Touch ID or password authentication. Lock immediately or after a delay of your choice.</p>
+    </div>
+  </div>
+
+  <div class="choice-card">
+    <div class="choice-icon">
+      <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+    </div>
+    <div class="choice-content">
+      <h3>Complete Data Removal</h3>
+      <p>To remove all data permanently, delete the app and remove <code>~/Library/Application Support/ClipboardVault/</code></p>
+    </div>
+  </div>
+
+  <section>
+    <h2>Data We Never Collect</h2>
+    <p>Clipboard Vault does not collect, store, or transmit any of the following:</p>
+    <p>❌ Personal information &nbsp; ❌ Usage analytics &nbsp; ❌ Crash reports<br>
+       ❌ Device identifiers &nbsp; ❌ Location data &nbsp; ❌ Advertising data<br>
+       ❌ Cookies or web tracking &nbsp; ❌ Any network telemetry</p>
+  </section>
+
+</div>
+
+<div class="footer">
+  © 2026 Arjun Donthala. All rights reserved.<br>
+  <a href="privacy.html">Privacy Policy</a> · <a href="support.html">Support</a>
+</div>
+
+</body>
+</html>
