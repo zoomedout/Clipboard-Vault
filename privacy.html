@@ -15,18 +15,6 @@
     --green: #34c759;
     --section-bg: #f5f5f7;
   }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #000000;
-      --card: #1c1c1e;
-      --text: #f5f5f7;
-      --secondary: #a1a1a6;
-      --accent: #2997ff;
-      --border: #38383a;
-      --green: #30d158;
-      --section-bg: #1c1c1e;
-    }
-  }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
@@ -164,6 +152,19 @@
   }
   .footer a { color: var(--accent); text-decoration: none; }
   .footer a:hover { text-decoration: underline; }
+  .nav-bar {
+    padding: 16px 24px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+    background: var(--card);
+  }
+  .nav-bar a {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 15px;
+    font-weight: 500;
+  }
+  .nav-bar a:hover { text-decoration: underline; }
   @media (max-width: 600px) {
     .hero h1 { font-size: 32px; }
     .tldr-grid { grid-template-columns: 1fr; }
@@ -172,6 +173,10 @@
 </style>
 </head>
 <body>
+
+<div class="nav-bar">
+  <a href="GUIDE.html">&larr; Back to Guide</a>
+</div>
 
 <div class="hero">
   <div class="hero-icon">
@@ -200,7 +205,7 @@
       </div>
       <div class="tldr-item">
         <div class="check"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div>
-        <span>Everything stays on your Mac</span>
+        <span>Everything stays on your device</span>
       </div>
     </div>
   </div>
@@ -209,7 +214,7 @@
 
   <section>
     <h2>Overview</h2>
-    <p>Clipboard Vault is a macOS clipboard manager developed by Arjun Donthala. It operates entirely offline. Your data never leaves your Mac — period.</p>
+    <p>Clipboard Vault is a clipboard manager for Mac, iPhone, and iPad, developed by Arjun Donthala. Your data stays on your device unless you enable iCloud Sync, in which case it is encrypted end-to-end between your devices.</p>
   </section>
 
   <section>
@@ -223,29 +228,30 @@
     </ul>
     <div class="highlight-card">
       <h3>Storage Location</h3>
-      <p>All data is stored in <code>~/Library/Application Support/ClipboardVault/</code></p>
+      <p><strong>Mac:</strong> <code>~/Library/Application Support/ClipboardVault/</code><br><strong>iPhone &amp; iPad:</strong> The app's private container (not accessible by other apps).</p>
     </div>
   </section>
 
   <section>
     <h2>Encryption</h2>
-    <p>All clipboard content is encrypted at rest using post-quantum hybrid encryption. No plaintext clipboard content is ever written to disk.</p>
+    <p>All clipboard content is encrypted at rest using v4 post-quantum hybrid encryption. No plaintext clipboard content is ever written to disk.</p>
     <ul>
-      <li><strong>AES-256-GCM</strong> — authenticated encryption</li>
       <li><strong>X25519</strong> — elliptic curve key agreement</li>
-      <li><strong>ML-KEM-768</strong> — post-quantum key encapsulation</li>
+      <li><strong>ML-KEM-768</strong> — post-quantum key encapsulation (NIST FIPS 203)</li>
+      <li><strong>HKDF-SHA256</strong> — key derivation</li>
+      <li><strong>AES-256-GCM</strong> — authenticated encryption</li>
     </ul>
-    <p>Private keys are stored in the macOS Keychain, protected by the Secure Enclave where available.</p>
+    <p>Private keys are stored in the device Keychain, protected by the Secure Enclave where available.</p>
   </section>
 
   <section>
     <h2>Authentication</h2>
-    <p>Clipboard Vault uses Touch ID and macOS password authentication to protect access to your history. Authentication is handled entirely by macOS on your device. No credentials are transmitted or stored by the app.</p>
+    <p>Clipboard Vault uses Touch ID, Face ID, or device password authentication to protect access to your history. Authentication is handled entirely by the operating system on your device. No credentials are transmitted or stored by the app.</p>
   </section>
 
   <section>
     <h2>Third-Party Services</h2>
-    <p>Clipboard Vault uses no third-party analytics, tracking, advertising, or cloud services. Zero network requests are made by the app.</p>
+    <p>Clipboard Vault uses no third-party analytics, tracking, or advertising. If you enable iCloud Sync, encrypted data is synced via Apple's CloudKit. No other network requests are made by the app.</p>
   </section>
 
   <section>
@@ -275,14 +281,14 @@
 
   <section>
     <h2>Contact</h2>
-    <p>Questions about this privacy policy? Reach out at <a href="mailto:arjunmitrareddy@icloud.com" style="color: var(--accent); text-decoration: none;">arjunmitrareddy@icloud.com</a></p>
+    <p>Questions about this privacy policy? Reach out at <a href="mailto:creels-85-senders@icloud.com" style="color: var(--accent); text-decoration: none;">creels-85-senders@icloud.com</a></p>
   </section>
 
 </div>
 
 <div class="footer">
   © 2026 Arjun Donthala. All rights reserved.<br>
-  <a href="support.html">Support</a>
+  <a href="GUIDE.html">Guide</a> · <a href="support.html">Support</a>
 </div>
 
 </body>

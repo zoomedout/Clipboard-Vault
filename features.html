@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Features — Clipboard Vault</title>
+  <meta name="description"
+    content="Deep dive into Clipboard Vault's architecture: post-quantum hybrid encryption, iCloud sync, full-text search, biometric auth, and more.">
+  <style>
+    :root {
+      --bg: #ffffff;
+      --bg-alt: #f5f5f7;
+      --bg-dark: #000000;
+      --text: #1d1d1f;
+      --text-secondary: #6e6e73;
+      --text-tertiary: #86868b;
+      --accent: #0071e3;
+      --accent-hover: #0077ed;
+      --green: #34c759;
+      --purple: #af52de;
+      --orange: #ff9500;
+      --teal: #5ac8fa;
+      --border: #d2d2d7;
+      --card: #ffffff;
+      --font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+      --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+      --font-mono: 'SF Mono', ui-monospace, Menlo, Consolas, monospace;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    /* ── Nav ── */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 52px;
+      background: rgba(255, 255, 255, 0.72);
+      backdrop-filter: saturate(180%) blur(20px);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .nav-inner {
+      max-width: 1024px;
+      width: 100%;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .nav-brand {
+      font-family: var(--font-display);
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+      text-decoration: none;
+      letter-spacing: -0.3px;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 28px;
+      align-items: center;
+    }
+
+    .nav-links a {
+      font-size: 13px;
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover {
+      color: var(--text);
+    }
+
+    .nav-cta {
+      background: var(--accent) !important;
+      color: white !important;
+      padding: 6px 16px;
+      border-radius: 980px;
+      font-size: 13px !important;
+      transition: opacity 0.2s !important;
+    }
+
+    .nav-cta:hover {
+      opacity: 0.85;
+    }
+
+    /* ── Hero ── */
+    .hero {
+      padding: 140px 24px 80px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: radial-gradient(ellipse 80% 60% at 50% 20%, rgba(0, 113, 227, 0.08) 0%, transparent 70%),
+        radial-gradient(ellipse 60% 50% at 30% 40%, rgba(175, 82, 222, 0.05) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 70% 40%, rgba(52, 199, 89, 0.05) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .hero h1 {
+      font-family: var(--font-display);
+      font-size: 64px;
+      font-weight: 700;
+      letter-spacing: -2px;
+      line-height: 1.05;
+      margin-bottom: 20px;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+      position: relative;
+    }
+
+    .hero h1 .gradient {
+      background: linear-gradient(135deg, var(--accent) 0%, var(--purple) 50%, var(--green) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-sub {
+      font-size: 21px;
+      color: var(--text-secondary);
+      max-width: 640px;
+      margin: 0 auto;
+      line-height: 1.5;
+      font-weight: 400;
+      position: relative;
+    }
+
+    /* ── Section layout ── */
+    .section {
+      padding: 100px 24px;
+      max-width: 1024px;
+      margin: 0 auto;
+    }
+
+    .section-alt {
+      background: var(--bg-alt);
+      max-width: 100%;
+      padding: 100px 24px;
+    }
+
+    .section-alt .inner {
+      max-width: 1024px;
+      margin: 0 auto;
+    }
+
+    .section-divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      max-width: 1024px;
+      margin: 0 auto;
+    }
+
+    /* ── Feature section ── */
+    .feature-section {
+      padding: 100px 24px;
+      max-width: 1024px;
+      margin: 0 auto;
+    }
+
+    .feature-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+
+    .feature-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .feature-icon svg {
+      width: 26px;
+      height: 26px;
+      fill: white;
+    }
+
+    .fi-blue { background: linear-gradient(135deg, #0071e3, #40a0ff); }
+    .fi-green { background: linear-gradient(135deg, #34c759, #30d158); }
+    .fi-purple { background: linear-gradient(135deg, #af52de, #bf5af2); }
+    .fi-orange { background: linear-gradient(135deg, #ff9500, #ffb340); }
+    .fi-teal { background: linear-gradient(135deg, #5ac8fa, #64d2ff); }
+    .fi-red { background: linear-gradient(135deg, #ff3b30, #ff6961); }
+    .fi-indigo { background: linear-gradient(135deg, #5856d6, #7d7aff); }
+    .fi-pink { background: linear-gradient(135deg, #ff2d55, #ff6482); }
+    .fi-gray { background: linear-gradient(135deg, #8e8e93, #aeaeb2); }
+
+    .feature-title {
+      font-family: var(--font-display);
+      font-size: 36px;
+      font-weight: 700;
+      letter-spacing: -0.8px;
+      line-height: 1.15;
+    }
+
+    .feature-desc {
+      font-size: 18px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-bottom: 36px;
+      max-width: 720px;
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+    }
+
+    .detail-card {
+      background: var(--bg-alt);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+    }
+
+    .section-alt .detail-card {
+      background: var(--card);
+    }
+
+    .detail-card h4 {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      letter-spacing: -0.1px;
+    }
+
+    .detail-card p {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    .detail-card.wide {
+      grid-column: 1 / -1;
+    }
+
+    /* ── Code blocks ── */
+    .token-block {
+      background: #1d1d1f;
+      color: #f5f5f7;
+      border-radius: 12px;
+      padding: 20px 24px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      line-height: 1.7;
+      overflow-x: auto;
+      margin-bottom: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .token-block .comment {
+      color: #6e6e73;
+    }
+
+    .token-block .prefix {
+      color: #5ac8fa;
+    }
+
+    .token-block .field {
+      color: #ffd60a;
+    }
+
+    .token-block .size {
+      color: #ff9f0a;
+    }
+
+    .token-block .op {
+      color: #86868b;
+    }
+
+    .token-block .label {
+      color: #30d158;
+    }
+
+    /* ── Inline code ── */
+    code {
+      font-family: var(--font-mono);
+      font-size: 0.88em;
+      background: var(--bg-alt);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 2px 6px;
+    }
+
+    /* ── Bullet lists ── */
+    .detail-list {
+      list-style: none;
+      padding: 0;
+    }
+
+    .detail-list li {
+      font-size: 15px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      padding: 6px 0;
+      padding-left: 20px;
+      position: relative;
+    }
+
+    .detail-list li::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 13px;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+
+    /* ── Footer ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 40px 24px;
+      text-align: center;
+    }
+
+    .footer-inner {
+      max-width: 1024px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .footer-copy {
+      font-size: 13px;
+      color: var(--text-tertiary);
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 24px;
+    }
+
+    .footer-links a {
+      font-size: 13px;
+      color: var(--text-secondary);
+      text-decoration: none;
+    }
+
+    .footer-links a:hover {
+      color: var(--text);
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .hero h1 {
+        font-size: 40px;
+        letter-spacing: -1px;
+      }
+
+      .hero-sub {
+        font-size: 17px;
+      }
+
+      .feature-section {
+        padding: 64px 24px;
+      }
+
+      .section-alt {
+        padding: 64px 24px;
+      }
+
+      .feature-title {
+        font-size: 28px;
+      }
+
+      .feature-desc {
+        font-size: 16px;
+      }
+
+      .detail-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .token-block {
+        font-size: 11px;
+        padding: 16px;
+      }
+
+      .nav-links a:not(.nav-cta) {
+        display: none;
+      }
+
+      .footer-inner {
+        flex-direction: column;
+        gap: 16px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Nav -->
+  <nav>
+    <div class="nav-inner">
+      <a class="nav-brand" href="GUIDE.html">Clipboard Vault</a>
+      <div class="nav-links">
+        <a href="GUIDE.html">Guide</a>
+        <a href="GUIDE.html#features">Overview</a>
+        <a href="GUIDE.html#security">Security</a>
+        <a href="support.html">Support</a>
+        <a class="nav-cta" href="https://apps.apple.com/app/clipboard-vault/id6760243773">Download</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <h1>Under the <span class="gradient">Hood</span></h1>
+    <p class="hero-sub">The security architecture behind Clipboard Vault. Post-quantum cryptography, zero-knowledge design, and native performance — because your clipboard sees everything.</p>
+  </section>
+
+  <hr class="section-divider">
+
+  <!-- ═══════════════════════════════════════════════════════
+       1. Post-Quantum Hybrid Encryption
+       ═══════════════════════════════════════════════════════ -->
+  <section class="feature-section" id="encryption">
+    <div class="feature-header">
+      <div class="feature-icon fi-purple">
+        <svg viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+      </div>
+      <h2 class="feature-title">Post-Quantum Hybrid Encryption</h2>
+    </div>
+
+    <p class="feature-desc">Every encrypted clip is protected by two independent layers of cryptography: classical elliptic-curve (X25519) and quantum-resistant (ML-KEM-768), standardized by NIST in August 2024. If a future quantum computer breaks one layer, the other still protects your data. This is the same dual-layer strategy recommended by cryptographers worldwide for long-term data protection — and Clipboard Vault is one of the first apps of any kind to ship it.</p>
+
+    <div class="token-block">
+      <span class="comment">// Anatomy of an encrypted clip</span><br>
+      <span class="prefix">"v4:"</span> <span class="op">+</span> base64url(<br>
+      &nbsp;&nbsp;<span class="field">eph_pk</span><span class="size">[32]</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">// ephemeral X25519 public key</span><br>
+      &nbsp;&nbsp;<span class="op">|</span> <span class="field">kem_ct</span><span class="size">[1088]</span>&nbsp;&nbsp;&nbsp;<span class="comment">// ML-KEM-768 ciphertext (quantum-resistant)</span><br>
+      &nbsp;&nbsp;<span class="op">|</span> <span class="field">nonce</span><span class="size">[12]</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">// AES-256-GCM nonce</span><br>
+      &nbsp;&nbsp;<span class="op">|</span> <span class="field">ciphertext</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">// your data (variable length)</span><br>
+      &nbsp;&nbsp;<span class="op">|</span> <span class="field">tag</span><span class="size">[16]</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">// authentication tag — tamper proof</span><br>
+      )
+    </div>
+
+    <div class="detail-grid">
+      <div class="detail-card">
+        <h4>Two Layers, One Guarantee</h4>
+        <p>Every clip is encrypted with both X25519 (proven, battle-tested elliptic-curve cryptography) and ML-KEM-768 (the new quantum-resistant standard). An attacker would need to independently break both algorithms to access a single clip — a security margin no other clipboard manager offers.</p>
+      </div>
+      <div class="detail-card">
+        <h4>ML-KEM-768 — NIST FIPS 203</h4>
+        <p>Standardized by NIST in August 2024 after years of rigorous public evaluation. ML-KEM-768 provides 192-bit post-quantum security. Data you encrypt today stays protected even against quantum computers that do not yet exist — so your clipboard history is future-proof.</p>
+      </div>
+      <div class="detail-card">
+        <h4>Per-Device Key Pairs</h4>
+        <p>Each of your devices generates its own unique encryption keys, stored exclusively in the system Keychain. Private keys never leave your device — not to us, not to Apple, not to anyone. There is no central key server, no key escrow, and no way for a third party to request your keys.</p>
+      </div>
+      <div class="detail-card">
+        <h4>AES-256-GCM Authenticated Encryption</h4>
+        <p>Your data payload is sealed with AES-256-GCM — the same authenticated encryption that protects TLS connections, Signal messages, and virtually every serious security protocol in use today. The authentication tag means your data cannot be silently tampered with; any modification is detected and rejected.</p>
+      </div>
+      <div class="detail-card wide">
+        <h4>Zero Knowledge</h4>
+        <p>All encryption and decryption happens on your device. No key material is ever transmitted. There is no server we control, no escrow service, no recovery backdoor. We literally cannot read your data — and neither can anyone else. If you lose all your devices and your iCloud Keychain, your encrypted clips are mathematically unrecoverable. That is not a limitation; it is the point.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="section-alt">
+    <div class="inner">
+
+  <!-- ═══════════════════════════════════════════════════════
+       2. iCloud Sync Architecture
+       ═══════════════════════════════════════════════════════ -->
+  <section class="feature-section" id="sync" style="padding-top:0; padding-bottom:0;">
+    <div class="feature-header">
+      <div class="feature-icon fi-blue">
+        <svg viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"/></svg>
+      </div>
+      <h2 class="feature-title">iCloud Sync Architecture</h2>
+    </div>
+
+    <p class="feature-desc">Your clipboard history syncs across all your Apple devices through iCloud — but every clip is fully encrypted before it ever leaves your device. What travels through Apple's servers is opaque, unreadable data. On the receiving device, it is re-encrypted with that device's own unique keys. Even Apple cannot read your synced clipboard.</p>
+
+    <div class="detail-grid">
+      <div class="detail-card">
+        <h4>Re-Encrypted on Every Device</h4>
+        <p>When a clip arrives on a new device, it is decrypted and immediately re-encrypted with that device's own key pair. Each device holds its own independently encrypted copy. No device depends on another device being online to access its own data.</p>
+      </div>
+      <div class="detail-card">
+        <h4>Your iCloud, Your Data</h4>
+        <p>Sync runs through your personal iCloud account — not a server we control. Your clips are stored in a private container that only your devices can access. We have no server, no database, no account system, and no way to see what you have copied.</p>
+      </div>
+      <div class="detail-card">
+        <h4>Fast, Incremental Sync</h4>
+        <p>Only new or changed clips are synced — not your entire history every time. Push notifications trigger near-real-time updates, so a clip copied on your Mac appears on your iPhone within seconds without polling or manual refresh.</p>
+      </div>
+      <div class="detail-card">
+        <h4>Everything Syncs</h4>
+        <p>Text, images, files, pins, notes, and deletions all sync seamlessly. Delete a clip on one device and it disappears everywhere. Pin something on your iPhone and it is pinned on your Mac. Your clipboard history stays perfectly consistent across all your Apple devices.</p>
+      </div>
+      <div class="detail-card wide">
+        <h4>Secure Key Distribution</h4>
+        <p>Each device's encryption keys are shared between your own devices through iCloud Keychain — Apple's hardware-backed, end-to-end encrypted key storage. Keys never exist in plaintext outside the secure hardware on your devices. No server, no intermediary, no exposure.</p>
+      </div>
+    </div>
+  </section>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       3. Search Index
+       ═══════════════════════════════════════════════════════ -->
+  <section class="feature-section" id="search">
+    <div class="feature-header">
+      <div class="feature-icon fi-green">
+        <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+      </div>
+      <h2 class="feature-title">Full-Text Search Index</h2>
+    </div>
+
+    <p class="feature-desc">Find any clip from your history in milliseconds. The search index is loaded into memory for instant results and encrypted when saved to disk — so your search data gets the same protection as your clipboard data itself.</p>
+
+    <div class="detail-grid">
+      <div class="detail-card">
+        <h4>Instant Results</h4>
+        <p>Start typing and results appear immediately. The search index is built in memory when you unlock the app, so queries resolve in milliseconds — no waiting, no loading spinners, no perceptible delay even with thousands of clips in your history.</p>
+      </div>
+      <div class="detail-card">
+        <h4>Partial Word Matching</h4>
+        <p>You do not need to remember the exact word. Searching for <code>board</code> finds <code>clipboard</code>. Searching for <code>rypt</code> finds <code>encrypted</code>. Every substring is searchable, because the thing you are looking for is always the one you half-remember.</p>
+      </div>
+      <div class="detail-card">
+        <h4>Encrypted at Rest</h4>
+        <p>The search index is encrypted with the same post-quantum hybrid encryption used for your clips. When you lock the app, the in-memory index is wiped completely. When you unlock, it is restored from the encrypted copy on disk. Your search history never exists unprotected.</p>
+      </div>
+      <div class="detail-card">
+        <h4>Notes Are Searchable Too</h4>
+        <p>Add a note to any clip and it becomes part of the search index. Search for a keyword in your note and the attached clip surfaces instantly. Annotate clips with project names, context, or reminders — then find them by those annotations later.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="section-alt">
+    <div class="inner">
+
+  <!-- ═══════════════════════════════════════════════════════
+       4. Content Types
+       ═══════════════════════════════════════════════════════ -->
+  <section class="feature-section" id="content" style="padding-top:0; padding-bottom:0;">
+    <div class="feature-header">
+      <div class="feature-icon fi-orange">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+      </div>
+      <h2 class="feature-title">Content Types & Formats</h2>
+    </div>
+
+    <p class="feature-desc">Text, images, and files — Clipboard Vault captures and encrypts everything you copy. Each content type is handled with purpose-built encryption and storage, and smart detection automatically classifies what you have copied so you can find it later.</p>
+
+    <div class="detail-grid">
+      <div class="detail-card">
+        <h4>Text</h4>
+        <p>Plain text, rich text, code snippets, URLs, and more. Optionally preserve formatting so pasting into a document keeps your bold, italic, and links intact. Every text clip is individually encrypted before being stored.</p>
+      </div>
+      <div class="detail-card">
+        <h4>Images</h4>
+        <p>Screenshots, photos, diagrams — PNG, JPEG, HEIC, GIF, WebP, TIFF, and BMP are all supported. Images are encrypted and stored on disk with thumbnail previews generated for browsing, so your history loads fast without compromising security.</p>
+      </div>
+      <div class="detail-card">
+        <h4>Files</h4>
+        <p>Any file type — PDFs, documents, archives, code files. Large files are encrypted using a streaming approach, so even a 50 MB file (configurable limit) is processed efficiently without consuming excessive memory.</p>
+      </div>
+      <div class="detail-card">
+        <h4>Smart Detection</h4>
+        <p>Clipboard Vault automatically recognizes what you have copied: code snippets, URLs, email addresses, phone numbers, street addresses, hex color codes, JSON data, and files. Each clip gets a visual category badge so you can scan your history at a glance.</p>
+      </div>
+      <div class="detail-card wide">
+        <h4>Link Previews</h4>
+        <p>URLs are detected and displayed with visual link preview styling in your history. Importantly, no remote metadata is fetched — your clipboard activity is never leaked to third-party servers. The preview is generated entirely from the URL itself, keeping your browsing habits completely private.</p>
+      </div>
+    </div>
+  </section>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       5. Biometric Authentication
+       ═══════════════════════════════════════════════════════ -->
+  <section class="feature-section" id="auth">
+    <div class="feature-header">
+      <div class="feature-icon fi-indigo">
+        <svg viewBox="0 0 24 24"><path d="M17.81 4.47c-.08 0-.16-.02-.23-.06C15.66 3.42 14 3 12.01 3c-1.98 0-3.86.47-5.57 1.41-.24.13-.54.04-.68-.2-.13-.24-.04-.55.2-.68C7.82 2.52 9.86 2 12.01 2c2.13 0 3.99.47 6.03 1.52.25.13.34.43.21.67-.09.18-.26.28-.44.28zM3.5 9.72c-.1 0-.2-.03-.29-.09-.23-.16-.28-.47-.12-.7.99-1.4 2.25-2.51 3.75-3.3C8.31 4.86 10.13 4.47 12 4.47c1.88 0 3.69.39 5.17 1.16 1.49.79 2.76 1.9 3.75 3.3.16.22.1.54-.12.7-.23.16-.54.11-.7-.12-.9-1.26-2.04-2.27-3.39-2.98C15.3 5.82 13.67 5.47 12 5.47c-1.66 0-3.3.35-4.71 1.06-1.36.72-2.49 1.72-3.39 2.98-.1.14-.25.21-.4.21zM9.75 21.79c-.13 0-.26-.05-.35-.15-.87-.87-1.34-1.43-2.01-2.64-.69-1.23-1.05-2.73-1.05-4.34 0-2.97 2.54-5.39 5.66-5.39s5.66 2.42 5.66 5.39c0 .28-.22.5-.5.5s-.5-.22-.5-.5c0-2.42-2.09-4.39-4.66-4.39-2.57 0-4.66 1.97-4.66 4.39 0 1.44.32 2.77.93 3.85.64 1.15 1.08 1.64 1.85 2.42.19.2.19.51 0 .71-.11.1-.24.15-.37.15zM16.92 19.94c-1.19 0-2.24-.3-3.1-.89-1.49-1.01-2.38-2.65-2.38-4.39 0-.28.22-.5.5-.5s.5.22.5.5c0 1.36.72 2.64 1.88 3.42.7.47 1.55.71 2.51.71.28 0 .5.22.5.5s-.16.65-.41.65zM12 16.04c-.28 0-.5-.22-.5-.5 0-.95.68-1.75 1.67-1.75.97 0 1.67.8 1.67 1.75 0 .28-.22.5-.5.5s-.5-.22-.5-.5c0-.42-.32-.75-.67-.75-.35 0-.67.33-.67.75 0 .28-.22.5-.5.5z"/></svg>
+      </div>
+      <h2 class="feature-title">Biometric Authentication</h2>
+    </div>
+
+    <p class="feature-desc">Clipboard Vault locks itself when you close it and requires biometric authentication to re-open. Touch ID on Mac, Face ID on iPhone and iPad. Your clipboard history is never visible without you — and never decrypted in memory while locked.</p>
+
+    <div class="detail-grid">
+      <div class="detail-card">
+        <h4>Touch ID & Face ID</h4>
+        <p>Authentication uses the native system biometric prompt — the same one you see when unlocking your Mac or authorizing Apple Pay. No custom dialogs, no workarounds. If your device has a biometric sensor, Clipboard Vault uses it.</p>
+      </div>
+      <div class="detail-card">
+        <h4>Password Fallback</h4>
+        <p>If biometrics fail or are unavailable, you can authenticate with your macOS login password directly within the app. A secure text field appears inline — no external windows, no disruption to your workflow.</p>
+      </div>
+      <div class="detail-card">
+        <h4>Configurable Lock Delay</h4>
+        <p>Choose how quickly Clipboard Vault locks after you close it. Options range from immediate (the default) to 5 minutes, so you can balance security and convenience. Immediate lock means re-authentication every time you open the app.</p>
+      </div>
+      <div class="detail-card">
+        <h4>Memory Protection</h4>
+        <p>When the app locks, decryption keys are wiped from memory and the search index is cleared. No decrypted content remains resident in RAM. When you unlock, keys are securely re-derived from the Keychain and your search index is rebuilt from its encrypted copy.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="section-alt">
+    <div class="inner">
+
+  <!-- ═══════════════════════════════════════════════════════
+       6. Storage & Retention
+       ═══════════════════════════════════════════════════════ -->
+  <section class="feature-section" id="storage" style="padding-top:0; padding-bottom:0;">
+    <div class="feature-header">
+      <div class="feature-icon fi-teal">
+        <svg viewBox="0 0 24 24"><path d="M2 20h20v-4H2v4zm2-3h2v2H4v-2zM2 4v4h20V4H2zm4 3H4V5h2v2zm-4 7h20v-4H2v4zm2-3h2v2H4v-2z"/></svg>
+      </div>
+      <h2 class="feature-title">Storage & Retention</h2>
+    </div>
+
+    <p class="feature-desc">Your clipboard history is stored locally with configurable retention policies and automatic disk usage management. You decide how long clips are kept, how much space they can use, and which content types are tracked — the app handles the rest.</p>
+
+    <div class="detail-grid">
+      <div class="detail-card">
+        <h4>Shared Across Platforms</h4>
+        <p>The same database format is used on macOS and iOS. Your clipboard history is structured identically on both platforms, so synced data arrives ready to use with no conversion or compatibility issues.</p>
+      </div>
+      <div class="detail-card">
+        <h4>Configurable Retention</h4>
+        <p>Set retention from 1 hour to forever. Expired clips are automatically cleaned up. A separate disk usage cap (default 500 MB) ensures your storage does not grow unbounded, even with long retention windows.</p>
+      </div>
+      <div class="detail-card">
+        <h4>Per-Type Tracking</h4>
+        <p>Toggle tracking independently for text, images, and files. Toggle encryption independently for each type too. Disable image tracking if you only care about text, or turn off file tracking to save disk space.</p>
+      </div>
+      <div class="detail-card">
+        <h4>Automatic Cleanup</h4>
+        <p>Two cleanup strategies run automatically: time-based (remove clips older than your retention window) and size-based (remove oldest clips when disk usage exceeds your cap). Pinned clips are always exempt from both — they stay until you delete them.</p>
+      </div>
+    </div>
+  </section>
+
+    </div>
+  </div>
+
+  <div class="section-alt">
+    <div class="inner">
+
+  <!-- ═══════════════════════════════════════════════════════
+       8. Privacy by Design
+       ═══════════════════════════════════════════════════════ -->
+  <section class="feature-section" id="privacy" style="padding-top:0; padding-bottom:0;">
+    <div class="feature-header">
+      <div class="feature-icon fi-green">
+        <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>
+      </div>
+      <h2 class="feature-title">Privacy by Design</h2>
+    </div>
+
+    <p class="feature-desc">No accounts. No telemetry. No third-party SDKs. No server. Clipboard Vault is a local-first app that optionally syncs through your own iCloud account. We never see your data because we have no infrastructure to see it with.</p>
+
+    <div class="detail-grid">
+      <div class="detail-card">
+        <h4>No Accounts, No Cloud We Control</h4>
+        <p>There is no sign-up, no login, no backend server. If you enable sync, it goes through your personal iCloud account — your private container, accessible only by your own devices. We have no server, no database, and no ability to access your data.</p>
+      </div>
+      <div class="detail-card">
+        <h4>Encryption Keys Never Leave Your Devices</h4>
+        <p>Your encryption keys are stored in the system Keychain — Apple's hardware-backed secure storage. Keys are never written to disk as files, never logged, and never included in unencrypted backups. When syncing, keys are distributed between your devices through iCloud Keychain's end-to-end encrypted channel.</p>
+      </div>
+      <div class="detail-card">
+        <h4>No Analytics or Tracking</h4>
+        <p>Zero analytics frameworks. Zero tracking pixels. Zero network requests except iCloud sync (when you enable it). The app makes no outbound connections to any server we operate — because we do not operate any. Your clipboard activity is nobody's business.</p>
+      </div>
+      <div class="detail-card">
+        <h4>App Store Sandboxed</h4>
+        <p>Clipboard Vault runs in the macOS and iOS sandbox with minimal entitlements. No background network access. No access to your contacts, calendar, location, or microphone. The app can only do what it needs to do: read your clipboard, encrypt it, and store it locally.</p>
+      </div>
+    </div>
+  </section>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       9. Native Performance
+       ═══════════════════════════════════════════════════════ -->
+  <section class="feature-section" id="performance">
+    <div class="feature-header">
+      <div class="feature-icon fi-red">
+        <svg viewBox="0 0 24 24"><path d="M13 2.05v2.02c3.95.49 7 3.85 7 7.93 0 1.62-.49 3.13-1.32 4.39l1.46 1.46C21.32 16.12 22 14.12 22 12c0-5.18-3.95-9.45-9-9.95zM12 19c-3.87 0-7-3.13-7-7 0-3.53 2.61-6.43 6-6.92V3.03c-4.06.5-7.21 3.86-7.95 7.97-.02.33-.05.66-.05 1 0 4.97 4.03 9 9 9 1.83 0 3.54-.5 5-1.37l-1.46-1.46C14.54 18.7 13.32 19 12 19zm3.44-5.37l1.46-1.46-4.47-4.47L9 11.13l1.41 1.41 1.03-1.03 3 3.12z"/></svg>
+      </div>
+      <h2 class="feature-title">Native Performance</h2>
+    </div>
+
+    <p class="feature-desc">Built entirely in Swift with no web views, no Electron, no cross-platform compromises. Clipboard Vault is a true native app on both macOS and iOS — fast to launch, light on resources, and respectful of your battery.</p>
+
+    <div class="detail-grid">
+      <div class="detail-card">
+        <h4>100% Native</h4>
+        <p>No embedded browser, no JavaScript runtime, no bridging layers. The UI is built with Apple's own frameworks on both platforms. Interface interactions respond in single-digit milliseconds — the kind of speed you only get from native code.</p>
+      </div>
+      <div class="detail-card">
+        <h4>Concurrency Without Compromise</h4>
+        <p>The clipboard monitor, encryption engine, search index, and sync system all run concurrently using Swift's modern concurrency model. New clips are captured, encrypted, and indexed without ever blocking the UI or causing lag.</p>
+      </div>
+      <div class="detail-card">
+        <h4>Lives in Your Menu Bar</h4>
+        <p>On macOS, Clipboard Vault runs quietly in the menu bar — no Dock icon, no app switcher clutter. A global hotkey gives you instant access to your history. The panel appears and disappears without disrupting whatever you are working on.</p>
+      </div>
+      <div class="detail-card">
+        <h4>Efficient Clipboard Monitoring</h4>
+        <p>The clipboard is checked with sub-50ms polling, but new content is only processed when something actually changes. Smart self-copy detection prevents the app from recording its own paste operations, keeping your history clean and relevant.</p>
+      </div>
+      <div class="detail-card wide">
+        <h4>Minimal Footprint</h4>
+        <p>Two libraries total — one for the database, one for post-quantum cryptography. No bloated dependency trees, no unnecessary frameworks. All encryption is handled by Apple's CryptoKit and a statically linked quantum-resistant library. The result is a lean, fast binary with a minimal attack surface.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-copy">&copy; 2026 Arjun Donthala. All rights reserved. &middot; Mac &middot; iPhone &middot; iPad</div>
+      <div class="footer-links">
+        <a href="privacy.html">Privacy Policy</a>
+        <a href="support.html">Support</a>
+        <a href="privacy-choices.html">Privacy Choices</a>
+      </div>
+    </div>
+  </footer>
+
+</body>
+
+</html>

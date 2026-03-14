@@ -15,18 +15,6 @@
     --green: #34c759;
     --section-bg: #f5f5f7;
   }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #000000;
-      --card: #1c1c1e;
-      --text: #f5f5f7;
-      --secondary: #a1a1a6;
-      --accent: #2997ff;
-      --border: #38383a;
-      --green: #30d158;
-      --section-bg: #1c1c1e;
-    }
-  }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
@@ -142,6 +130,19 @@
   .footer a { color: var(--accent); text-decoration: none; }
   .footer a:hover { text-decoration: underline; }
 
+  .nav-bar {
+    padding: 16px 24px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+    background: var(--card);
+  }
+  .nav-bar a {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 15px;
+    font-weight: 500;
+  }
+  .nav-bar a:hover { text-decoration: underline; }
   @media (max-width: 600px) {
     .hero h1 { font-size: 32px; }
     .hero { padding: 60px 24px 40px; }
@@ -150,6 +151,10 @@
 </style>
 </head>
 <body>
+
+<div class="nav-bar">
+  <a href="GUIDE.html">&larr; Back to Guide</a>
+</div>
 
 <div class="hero">
   <div class="hero-icon">
@@ -166,7 +171,7 @@
       <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
     </div>
     <h2>No Choices Needed</h2>
-    <p>Clipboard Vault collects zero personal data, makes zero network requests, and uses zero tracking. There's nothing to opt out of because we never opted you in.</p>
+    <p>Clipboard Vault collects zero personal data and uses zero tracking. iCloud Sync is optional and end-to-end encrypted. There's nothing to opt out of because we never opted you in.</p>
   </div>
 
   <h2 style="font-size: 24px; font-weight: 600; margin-bottom: 20px;">What You Can Control</h2>
@@ -227,7 +232,7 @@
     </div>
     <div class="choice-content">
       <h3>Complete Data Removal</h3>
-      <p>To remove all data permanently, delete the app and remove <code>~/Library/Application Support/ClipboardVault/</code></p>
+      <p><strong>Mac:</strong> Delete the app and remove <code>~/Library/Application Support/ClipboardVault/</code>.<br><strong>iPhone &amp; iPad:</strong> Delete the app — all local data is removed automatically.</p>
     </div>
   </div>
 
@@ -243,7 +248,7 @@
 
 <div class="footer">
   © 2026 Arjun Donthala. All rights reserved.<br>
-  <a href="privacy.html">Privacy Policy</a> · <a href="support.html">Support</a>
+  <a href="GUIDE.html">Guide</a> · <a href="privacy.html">Privacy Policy</a> · <a href="support.html">Support</a>
 </div>
 
 </body>
