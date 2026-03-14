@@ -494,7 +494,7 @@
       </div>
       <div class="detail-card">
         <h4>Per-Device Key Pairs</h4>
-        <p>Each of your devices generates its own unique encryption keys, stored exclusively in the system Keychain. Private keys never leave your device — not to us, not to Apple, not to anyone. There is no central key server, no key escrow, and no way for a third party to request your keys.</p>
+        <p>Each of your devices generates its own unique post-quantum encryption key pair for local storage, stored exclusively in the system Keychain. Private keys never leave your device — not to us, not to Apple, not to anyone. A separate AES-256 sync key is shared via iCloud Keychain only for CloudKit transport, keeping local and transit encryption fully independent.</p>
       </div>
       <div class="detail-card">
         <h4>AES-256-GCM Authenticated Encryption</h4>
@@ -521,12 +521,12 @@
       <h2 class="feature-title">iCloud Sync Architecture</h2>
     </div>
 
-    <p class="feature-desc">Your clipboard history syncs across all your Apple devices through iCloud — but every clip is fully encrypted before it ever leaves your device. What travels through Apple's servers is opaque, unreadable data. On the receiving device, it is re-encrypted with that device's own unique keys. Even Apple cannot read your synced clipboard.</p>
+    <p class="feature-desc">Your clipboard history syncs across all your Apple devices through iCloud — but with a two-key encryption architecture that treats iCloud as an untrusted transport. Each device encrypts locally with its own post-quantum key pair, while a shared AES-256 sync key protects data in transit through CloudKit. Even if iCloud were compromised, your local data remains protected by device-specific keys that never leave the device.</p>
 
     <div class="detail-grid">
       <div class="detail-card">
-        <h4>Re-Encrypted on Every Device</h4>
-        <p>When a clip arrives on a new device, it is decrypted and immediately re-encrypted with that device's own key pair. Each device holds its own independently encrypted copy. No device depends on another device being online to access its own data.</p>
+        <h4>Two-Key Architecture</h4>
+        <p>Local storage uses device-specific hybrid post-quantum keys. CloudKit transport uses an industry-standard AES-256-GCM symmetric sync key — the same approach used by Signal, iMessage, and other trusted encrypted services. Every clip is re-encrypted when pushed to CloudKit and again when pulled to a new device — iCloud never sees your data encrypted with your device's private key.</p>
       </div>
       <div class="detail-card">
         <h4>Your iCloud, Your Data</h4>
@@ -542,7 +542,7 @@
       </div>
       <div class="detail-card wide">
         <h4>Secure Key Distribution</h4>
-        <p>Each device's encryption keys are shared between your own devices through iCloud Keychain — Apple's hardware-backed, end-to-end encrypted key storage. Keys never exist in plaintext outside the secure hardware on your devices. No server, no intermediary, no exposure.</p>
+        <p>The shared sync key is distributed between your devices through iCloud Keychain — Apple's hardware-backed, end-to-end encrypted key storage. Each device's local encryption keys never leave the device at all. The first device to enable sync generates the sync key; joining devices pull it automatically. No server, no intermediary, no exposure.</p>
       </div>
     </div>
   </section>
@@ -717,7 +717,7 @@
       </div>
       <div class="detail-card">
         <h4>Encryption Keys Never Leave Your Devices</h4>
-        <p>Your encryption keys are stored in the system Keychain — Apple's hardware-backed secure storage. Keys are never written to disk as files, never logged, and never included in unencrypted backups. When syncing, keys are distributed between your devices through iCloud Keychain's end-to-end encrypted channel.</p>
+        <p>Your local encryption keys are stored in the system Keychain — Apple's hardware-backed secure storage. Private keys are never written to disk as files, never logged, and never included in unencrypted backups. The sync key is distributed between your devices through iCloud Keychain's end-to-end encrypted channel, but your device-specific private keys never leave the device.</p>
       </div>
       <div class="detail-card">
         <h4>No Analytics or Tracking</h4>

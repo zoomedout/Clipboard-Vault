@@ -311,7 +311,7 @@
 
     <div class="faq-item">
       <h3><span class="q">Q</span>How is my data protected?</h3>
-      <p>All clipboard content is encrypted at rest using post-quantum hybrid encryption (X25519 + ML-KEM-768 with AES-256-GCM). Private keys live in your device's Keychain. No data leaves your device unless you enable iCloud Sync, in which case data is encrypted end-to-end.</p>
+      <p>All clipboard content is encrypted at rest using post-quantum hybrid encryption (X25519 + ML-KEM-768 with AES-256-GCM). Each device has its own private keys that never leave the device. When iCloud Sync is enabled, data is re-encrypted with a separate AES-256 sync key for transport — so even if iCloud were compromised, your local data remains protected by device-specific keys.</p>
     </div>
 
     <div class="faq-item">

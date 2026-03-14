@@ -224,7 +224,7 @@
       <li>Clipboard history — text, images, files, and RTF content you copy</li>
       <li>Notes you attach to clipboard items</li>
       <li>App settings and preferences</li>
-      <li>Encryption keys (in your macOS Keychain)</li>
+      <li>Encryption keys (in your device Keychain and iCloud Keychain for sync)</li>
     </ul>
     <div class="highlight-card">
       <h3>Storage Location</h3>
@@ -234,14 +234,14 @@
 
   <section>
     <h2>Encryption</h2>
-    <p>All clipboard content is encrypted at rest using v4 post-quantum hybrid encryption. No plaintext clipboard content is ever written to disk.</p>
+    <p>All clipboard content is encrypted at rest using post-quantum hybrid encryption with device-specific keys. When syncing, data is re-encrypted with a shared AES-256-GCM sync key for CloudKit transport — your device-specific private keys never leave the device.</p>
     <ul>
-      <li><strong>X25519</strong> — elliptic curve key agreement</li>
-      <li><strong>ML-KEM-768</strong> — post-quantum key encapsulation (NIST FIPS 203)</li>
-      <li><strong>HKDF-SHA256</strong> — key derivation</li>
-      <li><strong>AES-256-GCM</strong> — authenticated encryption</li>
+      <li><strong>X25519</strong> — elliptic curve key agreement (local encryption)</li>
+      <li><strong>ML-KEM-768</strong> — post-quantum key encapsulation, NIST FIPS 203 (local encryption)</li>
+      <li><strong>HKDF-SHA256</strong> — key derivation (local encryption)</li>
+      <li><strong>AES-256-GCM</strong> — authenticated encryption (local and sync transport)</li>
     </ul>
-    <p>Private keys are stored in the device Keychain, protected by the Secure Enclave where available.</p>
+    <p>Local private keys are stored in the device Keychain, protected by the Secure Enclave where available. The sync key is shared between your devices via iCloud Keychain.</p>
   </section>
 
   <section>

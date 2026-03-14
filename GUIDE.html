@@ -1401,8 +1401,8 @@
           <div class="encrypt-step fade-in">
             <div class="encrypt-num">4</div>
             <div>
-              <h4>Touch ID to decrypt</h4>
-              <p>Private keys live in macOS Keychain. Only your fingerprint or password can unlock them. Keys are zeroed
+              <h4>Touch ID or Face ID to decrypt</h4>
+              <p>Private keys live in the device Keychain. Only your fingerprint, face, or password can unlock them. Keys are zeroed
                 from memory on lock.</p>
             </div>
           </div>
@@ -2151,17 +2151,17 @@
     var PROXY_URL = isLocal ? 'http://localhost:5193/v1/messages' : WORKER_URL + '/v1/messages';
 
     var SYSTEM_PROMPT = 'You are a friendly help assistant embedded in the Clipboard Vault user guide '
-      + '\u2014 a macOS menu bar clipboard manager app (v5.1) built by Arjun Donthala.\n\n'
+      + '\u2014 a clipboard manager app for Mac, iPhone, and iPad built by Arjun Donthala.\n\n'
       + 'Your job is to answer questions about this app in a warm, clear, non-technical way. You know everything about:\n'
-      + '- Features: menu bar icon, global hotkey (Cmd+Shift+V), search, smart categories (url/email/code/path/number), pinning, two-panel UI, notes\n'
-      + '- Privacy: 100% offline, zero servers, no analytics, no tracking, no accounts, no internet connection\n'
-      + '- Security: hybrid X25519 + ML-KEM-768 ECIES encryption (AES-256-GCM), private keys in macOS Keychain (hardware-protected on Apple Silicon), public keys on disk, Touch ID + password biometric lock, anti-debug detection, SIP check\n'
-      + '- Data storage: ~/Library/Application Support/ClipboardVault/ (fully encrypted, no plaintext on disk), encrypted images (.enc files), private keys in macOS Keychain (never synced to iCloud, never in backups)\n'
-      + '- All content fully encrypted on disk \u2014 no plaintext preview stored. Search decrypts each item on the fly.\n'
-      + '- Setup: needs Accessibility permission for global hotkey (optional). macOS 12+\n'
-      + '- Keyboard shortcuts: Cmd+Shift+V (toggle), Cmd+F (search), arrows (navigate), Return (paste), Escape (close)\n'
-      + '- Auto-delete: configurable retention (1 day, 1 week, 1 month, 3 months, forever)\n'
-      + '- Universal Clipboard: captures cross-device pastes from iPhone via Handoff\n\n'
+      + '- Features: menu bar icon (Mac), global hotkey Cmd+Shift+V (Mac), search, smart categories (url/email/code/path/number), pinning, notes, iCloud Sync\n'
+      + '- Privacy: zero servers, no analytics, no tracking, no accounts. Sync uses your own iCloud account.\n'
+      + '- Security: two-key encryption architecture. Local storage uses hybrid X25519 + ML-KEM-768 post-quantum encryption (AES-256-GCM) with per-device key pairs. iCloud sync uses an industry-standard AES-256-GCM symmetric sync key shared via iCloud Keychain. Data is re-encrypted on push (local key \u2192 sync key) and pull (sync key \u2192 local key). Device private keys never leave the device. Touch ID (Mac) + Face ID (iPhone/iPad) biometric lock.\n'
+      + '- Data storage: ~/Library/Application Support/ClipboardVault/ on Mac, app sandbox on iOS (fully encrypted, no plaintext on disk), encrypted images/files (.enc files), private keys in device Keychain\n'
+      + '- All content fully encrypted on disk \u2014 no plaintext preview stored. Search index is encrypted too.\n'
+      + '- Setup: macOS 13+, iOS 16+. Mac needs Accessibility permission for global hotkey (optional).\n'
+      + '- Keyboard shortcuts (Mac): Cmd+Shift+V (toggle), Cmd+F (search), arrows (navigate), Return (paste), Escape (close)\n'
+      + '- Auto-delete: configurable retention (1 hour to forever)\n'
+      + '- iCloud Sync: first device generates sync key, joining devices pull it. All clips re-encrypted for transport. Pins, notes, deletions all sync.\n\n'
       + 'Response format:\n'
       + 'Always structure your response in exactly this format:\n'
       + '---\n'
