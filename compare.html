@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Compare — Clipboard Vault</title>
+  <meta name="description"
+    content="See how Clipboard Vault compares to other clipboard managers: Paste, Maccy, PastePal, CopyClip, and more.">
+  <style>
+    :root {
+      --bg: #ffffff;
+      --bg-alt: #f5f5f7;
+      --bg-dark: #000000;
+      --text: #1d1d1f;
+      --text-secondary: #6e6e73;
+      --text-tertiary: #86868b;
+      --accent: #0071e3;
+      --accent-hover: #0077ed;
+      --green: #34c759;
+      --red: #ff3b30;
+      --orange: #ff9500;
+      --border: #d2d2d7;
+      --card: #ffffff;
+      --font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+      --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: var(--font); color: var(--text); background: var(--bg); -webkit-font-smoothing: antialiased; }
+
+    /* Nav */
+    nav { position: sticky; top: 0; z-index: 100; background: rgba(255,255,255,0.85); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); }
+    .nav-inner { max-width: 1024px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 14px 24px; }
+    .nav-brand { font-family: var(--font-display); font-size: 18px; font-weight: 700; color: var(--text); text-decoration: none; letter-spacing: -0.3px; }
+    .nav-links { display: flex; gap: 28px; align-items: center; }
+    .nav-links a { font-size: 13px; color: var(--text-secondary); text-decoration: none; font-weight: 500; transition: color 0.2s; }
+    .nav-links a:hover { color: var(--text); }
+    .nav-links a.active { color: var(--text); font-weight: 600; }
+    .nav-cta { background: var(--accent) !important; color: #fff !important; padding: 7px 16px !important; border-radius: 980px !important; font-weight: 500 !important; transition: background 0.2s !important; }
+    .nav-cta:hover { background: var(--accent-hover) !important; }
+
+    /* Hero */
+    .hero { text-align: center; padding: 80px 24px 40px; }
+    .hero h1 { font-family: var(--font-display); font-size: 48px; font-weight: 700; letter-spacing: -1.5px; line-height: 1.1; }
+    .hero .gradient { background: linear-gradient(135deg, var(--accent), #af52de); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .hero-sub { font-size: 18px; color: var(--text-secondary); max-width: 600px; margin: 16px auto 0; line-height: 1.5; }
+
+    /* Table */
+    .compare-section { max-width: 1100px; margin: 0 auto; padding: 0 24px 80px; }
+    .compare-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    .compare-table thead th { position: sticky; top: 52px; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); padding: 16px 12px; text-align: center; font-size: 13px; font-weight: 600; border-bottom: 2px solid var(--border); z-index: 10; }
+    .compare-table thead th:first-child { text-align: left; }
+    .compare-table thead th.highlight { color: var(--accent); }
+    .compare-table tbody td { padding: 12px; text-align: center; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+    .compare-table tbody td:first-child { text-align: left; font-weight: 500; color: var(--text); }
+    .compare-table tbody tr:hover { background: var(--bg-alt); }
+    .compare-table .category-row td { background: var(--bg-alt); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-secondary); padding: 10px 12px; border-bottom: 1px solid var(--border); }
+
+    .check { color: var(--green); font-size: 18px; font-weight: 700; }
+    .cross { color: var(--red); font-size: 16px; opacity: 0.4; }
+    .partial { color: var(--orange); font-size: 14px; }
+    .detail { font-size: 12px; color: var(--text-secondary); display: block; margin-top: 2px; }
+
+    .app-logo { width: 32px; height: 32px; border-radius: 8px; margin-bottom: 4px; }
+    .app-name { display: block; font-size: 12px; }
+    .app-price { display: block; font-size: 11px; color: var(--text-tertiary); margin-top: 2px; }
+
+    /* Highlight column */
+    .compare-table td.hl, .compare-table th.hl { background: rgba(0, 113, 227, 0.04); }
+    .compare-table th.hl { background: rgba(0, 113, 227, 0.08); }
+
+    /* CTA */
+    .cta-section { text-align: center; padding: 60px 24px 80px; }
+    .cta-section h2 { font-family: var(--font-display); font-size: 32px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 8px; }
+    .cta-section p { color: var(--text-secondary); margin-bottom: 24px; }
+    .cta-btn { display: inline-block; background: var(--accent); color: #fff; padding: 14px 32px; border-radius: 980px; text-decoration: none; font-weight: 600; font-size: 15px; transition: background 0.2s; }
+    .cta-btn:hover { background: var(--accent-hover); }
+
+    /* Footer */
+    footer { border-top: 1px solid var(--border); padding: 40px 24px; text-align: center; }
+    .footer-inner { max-width: 1024px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+    .footer-copy { font-size: 13px; color: var(--text-tertiary); }
+    .footer-links { display: flex; gap: 20px; }
+    .footer-links a { font-size: 13px; color: var(--text-secondary); text-decoration: none; }
+    .footer-links a:hover { color: var(--text); }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .compare-table { font-size: 12px; }
+      .compare-table thead th, .compare-table tbody td { padding: 8px 6px; }
+      .hero h1 { font-size: 32px; }
+      .nav-links a:not(.nav-cta) { display: none; }
+      .footer-inner { flex-direction: column; gap: 12px; }
+    }
+
+    @media (max-width: 600px) {
+      .compare-section { overflow-x: auto; }
+      .compare-table { min-width: 700px; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Nav -->
+  <nav>
+    <div class="nav-inner">
+      <a class="nav-brand" href="GUIDE.html">Clipboard Vault</a>
+      <div class="nav-links">
+        <a href="GUIDE.html">Guide</a>
+        <a href="features.html">Features</a>
+        <a href="compare.html" class="active">Compare</a>
+        <a href="support.html">Support</a>
+        <a class="nav-cta" href="https://apps.apple.com/app/clipboard-vault/id6760243773">Download</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <h1>How We <span class="gradient">Compare</span></h1>
+    <p class="hero-sub">Clipboard Vault is the only clipboard manager with post-quantum encryption, biometric lock, and zero analytics. Here's how it stacks up.</p>
+  </section>
+
+  <!-- Comparison Table -->
+  <div class="compare-section">
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th></th>
+          <th class="hl highlight">
+            <span class="app-name">Clipboard Vault</span>
+          </th>
+          <th>
+            <span class="app-name">Paste</span>
+            <span class="app-price">$2.49/mo</span>
+          </th>
+          <th>
+            <span class="app-name">Maccy</span>
+            <span class="app-price">Free / $9.99</span>
+          </th>
+          <th>
+            <span class="app-name">PastePal</span>
+            <span class="app-price">$9.99</span>
+          </th>
+          <th>
+            <span class="app-name">CopyClip 2</span>
+            <span class="app-price">$7.99</span>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+
+        <!-- Platforms -->
+        <tr class="category-row"><td colspan="6">Platforms</td></tr>
+        <tr>
+          <td>Mac</td>
+          <td class="hl"><span class="check">&check;</span></td>
+          <td><span class="check">&check;</span></td>
+          <td><span class="check">&check;</span></td>
+          <td><span class="check">&check;</span></td>
+          <td><span class="check">&check;</span></td>
+        </tr>
+        <tr>
+          <td>iPhone & iPad</td>
+          <td class="hl"><span class="check">&check;</span></td>
+          <td><span class="check">&check;</span></td>
+          <td><span class="cross">&times;</span></td>
+          <td><span class="check">&check;</span></td>
+          <td><span class="cross">&times;</span></td>
+        </tr>
+        <tr>
+          <td>Share Extension (iOS)</td>
+          <td class="hl"><span class="check">&check;</span></td>
+          <td><span class="cross">&times;</span></td>
+          <td><span class="cross">&times;</span></td>
+          <td><span class="cross">&times;</span></td>
+          <td><span class="cross">&times;</span></td>
+        </tr>
+
+        <!-- Content Types -->
+        <tr class="category-row"><td colspan="6">Content Types</td></tr>
+        <tr>
+          <td>Text & Rich Text</td>
+          <td class="hl"><span class="check">&check;</span></td>
+          <td><span class="check">&check;</span></td>
+          <td><span class="check">&check;</span></td>
+          <td><span class="check">&check;</span></td>
+          <td><span class="check">&check;</span></td>
+        </tr>
+        <tr>
+          <td>Images</td>
+          <td class="hl"><span class="check">&check;</span></td>
+          <td><span class="check">&check;</span></td>
+          <td><span class="check">&check;</span></td>
+          <td><span class="check">&check;</span></td>
+          <td><span class="cross">&times;</span></td>
+        </tr>
+        <tr>
+          <td>Files (PDF, archives, etc.)</td>
+          <td class="hl"><span class="check">&check;</span></td>
+          <td><span class="check">&check;</span></td>
+          <td><span class="check">&check;</span></td>
+          <td><span class="check">&check;</span></td>
+          <td><span class="cross">&times;</span></td>
+        </tr>
+        <tr>
+          <td>Videos (MP4, MOV)</td>
+          <td class="hl"><span class="check">&check;</span><span class="detail">With thumbnail preview</span></td>
+          <td><span class="cross">&times;</span></td>
+          <td><span class="cross">&times;</span></td>
+          <td><span class="cross">&times;</span></td>
+          <td><span class="cross">&times;</span></td>
+        </tr>
+        <tr>
+          <td>Multi-file capture</td>
+          <td class="hl"><span class="check">&check;</span><span class="detail">Mac & iOS Share Extension</span></td>
+          <td><span class="cross">&times;</span></td>
+          <td><span class="cross">&times;</span></td>
+          <td><span class="cross">&times;</span></td>
+          <td><span class="cross">&times;</span></td>
+        </tr>
+
+        <!-- Security -->
+        <tr class="category-row"><td colspan="6">Security & Privacy</td></tr>
+        <tr>
+          <td>Encryption at rest</td>
+          <td class="hl"><span class="check">&check;</span><span class="detail">Hybrid PQC</span></td>
+          <td><span class="cross">&times;</span></td>
+          <td><span class="cross">&times;</span></td>
+          <td><span class="cross">&times;</span></td>
+          <td><span class="cross">&times;</span></td>
+        </tr>
+        <tr>
+          <td>Post-quantum encryption</td>
+          <td class="hl"><span class="check">&check;</span><span class="detail">ML-KEM-768 + X25519</span></td>
+          <td><span class="cross">&times;</span></td>
+          <td><span class="cross">&times;</span></td>
+          <td><span class="cross">&times;</span></td>
+          <td><span class="cross">&times;</span></td>
+        </tr>
+        <tr>
+          <td>Touch ID / Face ID lock</td>
+          <td class="hl"><span class="check">&check;</span></td>
+          <td><span class="cross">&times;</span></td>
+          <td><span class="cross">&times;</span></td>
+          <td><span class="cross">&times;</span></td>
+          <td><span class="cross">&times;</span></td>
+        </tr>
+        <tr>
+          <td>Zero analytics & tracking</td>
+          <td class="hl"><span class="check">&check;</span></td>
+          <td><span class="cross">&times;</span><span class="detail">Uses Mixpanel</span></td>
+          <td><span class="check">&check;</span></td>
+          <td><span class="check">&check;</span></td>
+          <td><span class="partial">?</span></td>
+        </tr>
+        <tr>
+          <td>No account required</td>
+          <td class="hl"><span class="check">&check;</span></td>
+          <td><span class="cross">&times;</span></td>
+          <td><span class="check">&check;</span></td>
+          <td><span class="check">&check;</span></td>
+          <td><span class="check">&check;</span></td>
+        </tr>
+        <tr>
+          <td>Encrypted search index</td>
+          <td class="hl"><span class="check">&check;</span></td>
+          <td><span class="cross">&times;</span></td>
+          <td><span class="cross">&times;</span></td>
+          <td><span class="cross">&times;</span></td>
+          <td><span class="cross">&times;</span></td>
+        </tr>
+
+        <!-- Sync -->
+        <tr class="category-row"><td colspan="6">iCloud Sync</td></tr>
+        <tr>
+          <td>Cross-device sync</td>
+          <td class="hl"><span class="check">&check;</span><span class="detail">Encrypted via CloudKit</span></td>
+          <td><span class="check">&check;</span></td>
+          <td><span class="cross">&times;</span></td>
+          <td><span class="check">&check;</span></td>
+          <td><span class="cross">&times;</span></td>
+        </tr>
+        <tr>
+          <td>Sync media (images, files)</td>
+          <td class="hl"><span class="check">&check;</span><span class="detail">Up to 200 MB per file</span></td>
+          <td><span class="check">&check;</span></td>
+          <td><span class="cross">&times;</span></td>
+          <td><span class="check">&check;</span></td>
+          <td><span class="cross">&times;</span></td>
+        </tr>
+        <tr>
+          <td>End-to-end encrypted sync</td>
+          <td class="hl"><span class="check">&check;</span><span class="detail">AES-256-GCM sync key</span></td>
+          <td><span class="cross">&times;</span></td>
+          <td><span class="cross">&times;</span></td>
+          <td><span class="cross">&times;</span></td>
+          <td><span class="cross">&times;</span></td>
+        </tr>
+        <tr>
+          <td>Settings sync across devices</td>
+          <td class="hl"><span class="check">&check;</span><span class="detail">Via iCloud KVS</span></td>
+          <td><span class="cross">&times;</span></td>
+          <td><span class="cross">&times;</span></td>
+          <td><span class="cross">&times;</span></td>
+          <td><span class="cross">&times;</span></td>
+        </tr>
+
+        <!-- Features -->
+        <tr class="category-row"><td colspan="6">Features</td></tr>
+        <tr>
+          <td>Search</td>
+          <td class="hl"><span class="check">&check;</span></td>
+          <td><span class="check">&check;</span></td>
+          <td><span class="check">&check;</span></td>
+          <td><span class="check">&check;</span></td>
+          <td><span class="check">&check;</span></td>
+        </tr>
+        <tr>
+          <td>Pinning</td>
+          <td class="hl"><span class="check">&check;</span></td>
+          <td><span class="check">&check;</span><span class="detail">Pinboards</span></td>
+          <td><span class="check">&check;</span></td>
+          <td><span class="check">&check;</span></td>
+          <td><span class="check">&check;</span></td>
+        </tr>
+        <tr>
+          <td>Notes on clips</td>
+          <td class="hl"><span class="check">&check;</span></td>
+          <td><span class="cross">&times;</span></td>
+          <td><span class="cross">&times;</span></td>
+          <td><span class="cross">&times;</span></td>
+          <td><span class="cross">&times;</span></td>
+        </tr>
+        <tr>
+          <td>Smart categories</td>
+          <td class="hl"><span class="check">&check;</span><span class="detail">URL, email, code, path, number</span></td>
+          <td><span class="partial">~</span><span class="detail">By source app</span></td>
+          <td><span class="cross">&times;</span></td>
+          <td><span class="check">&check;</span></td>
+          <td><span class="cross">&times;</span></td>
+        </tr>
+        <tr>
+          <td>Keyboard shortcuts</td>
+          <td class="hl"><span class="check">&check;</span><span class="detail">Cmd+Shift+V</span></td>
+          <td><span class="check">&check;</span></td>
+          <td><span class="check">&check;</span></td>
+          <td><span class="check">&check;</span></td>
+          <td><span class="check">&check;</span></td>
+        </tr>
+        <tr>
+          <td>Stream encryption (large files)</td>
+          <td class="hl"><span class="check">&check;</span><span class="detail">1 MB chunks</span></td>
+          <td><span class="cross">&times;</span></td>
+          <td><span class="cross">&times;</span></td>
+          <td><span class="cross">&times;</span></td>
+          <td><span class="cross">&times;</span></td>
+        </tr>
+
+        <!-- Pricing -->
+        <tr class="category-row"><td colspan="6">Pricing</td></tr>
+        <tr>
+          <td>One-time purchase</td>
+          <td class="hl"><span class="check">&check;</span></td>
+          <td><span class="cross">&times;</span><span class="detail">Subscription only</span></td>
+          <td><span class="check">&check;</span></td>
+          <td><span class="check">&check;</span></td>
+          <td><span class="check">&check;</span></td>
+        </tr>
+        <tr>
+          <td>No subscription required</td>
+          <td class="hl"><span class="check">&check;</span></td>
+          <td><span class="cross">&times;</span></td>
+          <td><span class="check">&check;</span></td>
+          <td><span class="check">&check;</span></td>
+          <td><span class="check">&check;</span></td>
+        </tr>
+
+      </tbody>
+    </table>
+  </div>
+
+  <!-- CTA -->
+  <section class="cta-section">
+    <h2>Ready to upgrade your clipboard?</h2>
+    <p>Post-quantum encryption. Zero analytics. One-time purchase.</p>
+    <a class="cta-btn" href="https://apps.apple.com/app/clipboard-vault/id6760243773">Download Clipboard Vault</a>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-copy">&copy; 2026 Arjun Donthala. All rights reserved. &middot; Mac &middot; iPhone &middot; iPad</div>
+      <div class="footer-links">
+        <a href="privacy.html">Privacy Policy</a>
+        <a href="support.html">Support</a>
+        <a href="privacy-choices.html">Privacy Choices</a>
+      </div>
+    </div>
+  </footer>
+
+</body>
+
+</html>
