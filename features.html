@@ -609,8 +609,12 @@
         <p>Screenshots, photos, diagrams — PNG, JPEG, HEIC, GIF, WebP, TIFF, and BMP are all supported. Images are encrypted and stored on disk with thumbnail previews generated for browsing, so your history loads fast without compromising security.</p>
       </div>
       <div class="detail-card">
+        <h4>Videos</h4>
+        <p>Share videos from Photos or copy video files — MP4, MOV, and more. Videos are stream-encrypted in 1 MB chunks for constant memory usage. Thumbnail previews are generated automatically, and tap to play via QuickLook. Files up to 200 MB are supported.</p>
+      </div>
+      <div class="detail-card">
         <h4>Files</h4>
-        <p>Any file type — PDFs, documents, archives, code files. Large files are encrypted using a streaming approach, so even a 50 MB file (configurable limit) is processed efficiently without consuming excessive memory.</p>
+        <p>Any file type — PDFs, documents, archives, code files. Large files are encrypted using a streaming approach, processing in 1 MB chunks without consuming excessive memory. Files up to 200 MB are supported. Copy multiple files at once on macOS or multi-select in the iOS Share Extension.</p>
       </div>
       <div class="detail-card">
         <h4>Link Previews</h4>
@@ -669,7 +673,7 @@
       <h2 class="feature-title">Storage & Retention</h2>
     </div>
 
-    <p class="feature-desc">Your clipboard history is stored locally with configurable retention policies and automatic disk usage management. You decide how long clips are kept, how much space they can use, and which content types are tracked — the app handles the rest.</p>
+    <p class="feature-desc">Your clipboard history is stored locally with configurable retention policies. You decide how long clips are kept and which content types are tracked — the app handles the rest. The retention setting syncs across all your devices via iCloud.</p>
 
     <div class="detail-grid">
       <div class="detail-card">
@@ -678,7 +682,7 @@
       </div>
       <div class="detail-card">
         <h4>Configurable Retention</h4>
-        <p>Set retention from 1 hour to forever. Expired clips are automatically cleaned up. A separate disk usage cap (default 500 MB) ensures your storage does not grow unbounded, even with long retention windows.</p>
+        <p>Set retention from 1 hour to forever. Expired clips are automatically cleaned up on launch and after each new copy. This setting syncs across all your devices via iCloud, so you only configure it once.</p>
       </div>
       <div class="detail-card">
         <h4>Per-Type Tracking</h4>
@@ -686,7 +690,7 @@
       </div>
       <div class="detail-card">
         <h4>Automatic Cleanup</h4>
-        <p>Two cleanup strategies run automatically: time-based (remove clips older than your retention window) and size-based (remove oldest clips when disk usage exceeds your cap). Pinned clips are always exempt from both — they stay until you delete them.</p>
+        <p>Clips older than your retention window are automatically removed on launch and after each new copy. Pinned clips are always exempt — they stay until you delete them. You can also manually clear history by time range: last hour, last 24 hours, last 7 days, last 30 days, or all time.</p>
       </div>
     </div>
   </section>
