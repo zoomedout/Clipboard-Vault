@@ -1494,11 +1494,9 @@
       <div class="chat-header-text">
         <h4>
           <span lang="en">Ask about Clipboard Vault</span>
-          <span lang="te">Clipboard Vault గురించి అడగండి</span>
         </h4>
         <p>
           <span lang="en">Powered by Anthropic & Gemini</span>
-          <span lang="te">Anthropic & Gemini ద్వారా</span>
         </p>
       </div>
     </div>
@@ -1507,7 +1505,6 @@
     <div class="chat-messages" id="chat-messages">
       <div class="chat-msg system" lang="en">Ask me anything about Clipboard Vault — features, privacy, encryption,
         setup, or how things work.</div>
-      <div class="chat-msg system" lang="te">Clipboard Vault గురించి ఏదైనా అడగండి — ఫీచర్లు, గోప్యత, భద్రత, సెటప్.</div>
       <!-- Typing indicator (static, toggled via JS) -->
       <div class="chat-typing" id="typing-indicator">
         <span></span><span></span><span></span>
@@ -1559,6 +1556,7 @@
     /* ── Language visibility ── */
     body:not(.te) [lang="te"] {
       display: none !important;
+      /* Telugu support removed */
     }
 
     body.te [lang="en"] {
@@ -2224,8 +2222,7 @@
       + '1. Only answer questions related to Clipboard Vault, clipboard managers, macOS privacy/security, or general computing concepts that help users understand the app.\n'
       + '2. If someone asks something completely unrelated, politely redirect (no ELI5 needed for redirects).\n'
       + '3. Keep the standard explanation to 2-4 sentences.\n'
-      + '4. If the user asks in Telugu, respond fully in Telugu. The ELI5 section header should be "\u0C38\u0C30\u0C33\u0C02\u0C17\u0C3E:" instead of "ELI5:".\n'
-      + '5. Be warm and approachable. Never make up features that do not exist.';
+      + '4. Be warm and approachable. Never make up features that do not exist.';
 
     var chatHistory = [];
 
