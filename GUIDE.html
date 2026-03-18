@@ -2525,10 +2525,10 @@
       var overlay = document.getElementById('voice-overlay');
       var status = document.getElementById('voice-status');
       overlay.setAttribute('data-state', state);
-      if (state === 'error') return; // don't overwrite detailed error text
       if (state === 'connecting') status.textContent = 'Connecting...';
       else if (state === 'listening') status.textContent = 'Listening...';
       else if (state === 'speaking') status.textContent = 'Speaking...';
+      else if (state === 'error') status.textContent = 'Connection failed. Tap End to close.';
       else status.textContent = '';
     }
 
@@ -2548,7 +2548,6 @@
       overlay.classList.add('active');
       setVoiceState('connecting');
       devLog('', 'Voice: starting Gemini Live session, URL=' + LIVE_WS_URL);
-      document.getElementById('voice-status').textContent = 'Connecting to ' + LIVE_WS_URL + '...';
 
       try {
         liveWs = new WebSocket(LIVE_WS_URL);
@@ -2556,7 +2555,6 @@
 
         liveWs.onopen = function () {
           devLog('ok', 'Voice: WebSocket connected to proxy');
-          document.getElementById('voice-status').textContent = 'WS connected, waiting for setup...';
         };
 
         liveWs.onmessage = async function (evt) {
@@ -2605,12 +2603,10 @@
 
         liveWs.onerror = function (e) {
           devLog('err', 'Voice: WebSocket error');
-          document.getElementById('voice-status').textContent = 'WS error — check Worker WebSocket support';
         };
 
         liveWs.onclose = function (e) {
           devLog('', 'Voice: WebSocket closed (code=' + e.code + ', reason=' + (e.reason || 'none') + ')');
-          document.getElementById('voice-status').textContent = 'WS closed: code=' + e.code + ' reason=' + (e.reason || 'none');
           if (!liveEnding) {
             setVoiceState('error');
             cleanupLiveResources();
@@ -2619,7 +2615,6 @@
 
       } catch (e) {
         devLog('err', 'Voice: failed to connect: ' + e.message);
-        document.getElementById('voice-status').textContent = 'Connect failed: ' + e.message;
         setVoiceState('error');
       }
     }
