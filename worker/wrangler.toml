@@ -1,0 +1,7 @@
+name = "clipboard-vault-chat"
+main = "index.js"
+compatibility_date = "2024-09-23"
+
+# Secrets are NOT set here — use:
+#   wrangler secret put ANTHROPIC_API_KEY
+#   wrangler secret put GEMINI_API_KEY
