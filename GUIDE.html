@@ -2113,7 +2113,7 @@
     } catch (e) { }
 
     /* ── Dev Mode ─────────────────────────────────────────── */
-    var isLocal = location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.protocol === 'file:';
+    var isLocal = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
     var devMode = false;
 
     if (isLocal) {
