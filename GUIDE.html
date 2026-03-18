@@ -2525,10 +2525,10 @@
       var overlay = document.getElementById('voice-overlay');
       var status = document.getElementById('voice-status');
       overlay.setAttribute('data-state', state);
+      if (state === 'error') return; // don't overwrite detailed error text
       if (state === 'connecting') status.textContent = 'Connecting...';
       else if (state === 'listening') status.textContent = 'Listening...';
       else if (state === 'speaking') status.textContent = 'Speaking...';
-      else if (state === 'error') status.textContent = 'Connection failed. Tap End to close.';
       else status.textContent = '';
     }
 
