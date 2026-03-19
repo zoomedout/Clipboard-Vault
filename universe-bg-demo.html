@@ -16,44 +16,6 @@
 
   canvas { display: block; position: fixed; top: 0; left: 0; z-index: 0; }
 
-  /* Constellation info tooltip */
-  #constellation-info {
-    position: fixed;
-    z-index: 10;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.4s ease;
-    max-width: 280px;
-    background: rgba(10, 10, 40, 0.85);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(120, 140, 255, 0.3);
-    border-radius: 12px;
-    padding: 16px 20px;
-    color: #c8d0ff;
-    font-size: 13px;
-    line-height: 1.5;
-    box-shadow: 0 0 30px rgba(80, 100, 255, 0.15), inset 0 0 20px rgba(80, 100, 255, 0.05);
-  }
-  #constellation-info h3 {
-    font-size: 16px;
-    color: #e0e8ff;
-    margin-bottom: 4px;
-    letter-spacing: 1px;
-  }
-  #constellation-info .latin {
-    font-style: italic;
-    color: #8090cc;
-    font-size: 12px;
-    margin-bottom: 8px;
-    display: block;
-  }
-  #constellation-info .stars-count {
-    font-size: 11px;
-    color: #6a7ab8;
-    margin-top: 8px;
-  }
-
   /* Demo content overlay */
   #demo-content {
     position: fixed;
@@ -86,8 +48,6 @@
 
 <canvas id="universe"></canvas>
 
-<div id="constellation-info"></div>
-
 <div id="demo-content">
   <h1>Universe Background</h1>
   <p>Move your mouse to connect the stars</p>
@@ -97,24 +57,11 @@
 (() => {
   const canvas = document.getElementById('universe');
   const ctx = canvas.getContext('2d');
-  const infoEl = document.getElementById('constellation-info');
 
   let W, H;
   const resize = () => { W = canvas.width = innerWidth; H = canvas.height = innerHeight; };
   resize();
   addEventListener('resize', resize);
-
-  // --- Constellation data ---
-  const CONSTELLATIONS = [
-    { name: 'Orion', latin: 'Orion, the Hunter', desc: 'One of the most recognizable constellations, visible worldwide. Named after a hunter in Greek mythology, it contains the bright stars Betelgeuse and Rigel, and the iconic three-star belt.', stars: 7, color: [130, 170, 255] },
-    { name: 'Ursa Major', latin: 'Ursa Major, the Great Bear', desc: 'Home to the Big Dipper asterism. Used for centuries by navigators to find Polaris, the North Star. The third-largest constellation in the sky.', stars: 7, color: [180, 200, 255] },
-    { name: 'Cassiopeia', latin: 'Cassiopeia, the Queen', desc: 'Easily recognized by its distinctive W shape. Named after a vain queen in Greek mythology who boasted of her beauty. Visible year-round in the northern hemisphere.', stars: 5, color: [200, 180, 255] },
-    { name: 'Lyra', latin: 'Lyra, the Lyre', desc: 'A small constellation containing Vega, one of the brightest stars in the sky and part of the Summer Triangle. Represents the lyre of Orpheus.', stars: 5, color: [160, 200, 240] },
-    { name: 'Scorpius', latin: 'Scorpius, the Scorpion', desc: 'A zodiac constellation with the brilliant red supergiant Antares at its heart. Its curving tail of stars is one of the most striking patterns in the southern sky.', stars: 6, color: [255, 160, 130] },
-    { name: 'Cygnus', latin: 'Cygnus, the Swan', desc: 'Also known as the Northern Cross. Contains Deneb, one of the most luminous stars known. Lies along the Milky Way and is rich in deep-sky objects.', stars: 5, color: [140, 200, 255] },
-    { name: 'Leo', latin: 'Leo, the Lion', desc: 'A zodiac constellation recognizable by its sickle-shaped head. Its brightest star, Regulus, sits almost exactly on the ecliptic. Associated with the Nemean Lion of Greek myth.', stars: 6, color: [255, 200, 140] },
-    { name: 'Gemini', latin: 'Gemini, the Twins', desc: 'Named for the twins Castor and Pollux from Greek mythology, who are also its two brightest stars. A zodiac constellation and the radiant of the Geminid meteor shower.', stars: 6, color: [170, 220, 200] },
-  ];
 
   // --- Stars ---
   const STAR_COUNT = 600;
@@ -165,55 +112,147 @@
 
   for (let i = 0; i < STAR_COUNT; i++) stars.push(new Star());
 
-  // --- Planets ---
-  const planets = [];
-  const PLANET_DEFS = [
-    { radius: 14, color: [200, 120, 80], glow: [255, 140, 80], ring: false, name: 'Mars' },
-    { radius: 22, color: [180, 160, 120], glow: [220, 200, 150], ring: true, name: 'Saturn' },
-    { radius: 10, color: [100, 140, 200], glow: [120, 160, 255], ring: false, name: 'Neptune' },
+  // --- Distant galaxies (pre-rendered to offscreen canvases) ---
+  const GALAXY_DEFS = [
+    // Spiral galaxy — warm golden arms
+    { size: 120, tilt: 0.28, rotation: 0.4, arms: 2, armTightness: 0.3,
+      coreColor: [255, 230, 180], armColor: [200, 160, 120], dustColor: [120, 80, 50],
+      coreGlow: [255, 200, 140], opacity: 0.35 },
+    // Spiral galaxy — cool blue
+    { size: 90, tilt: 0.4, rotation: -0.7, arms: 3, armTightness: 0.25,
+      coreColor: [180, 200, 255], armColor: [100, 140, 220], dustColor: [50, 70, 140],
+      coreGlow: [140, 170, 255], opacity: 0.25 },
+    // Elliptical galaxy — soft red/pink
+    { size: 60, tilt: 0.5, rotation: 0, arms: 0, armTightness: 0,
+      coreColor: [255, 180, 160], armColor: [200, 120, 100], dustColor: [140, 60, 60],
+      coreGlow: [255, 150, 130], opacity: 0.2 },
+    // Tiny edge-on spiral
+    { size: 50, tilt: 0.85, rotation: 1.2, arms: 2, armTightness: 0.35,
+      coreColor: [220, 210, 200], armColor: [160, 150, 140], dustColor: [100, 80, 70],
+      coreGlow: [240, 230, 210], opacity: 0.18 },
+    // Large faint spiral — violet
+    { size: 140, tilt: 0.2, rotation: 2.0, arms: 2, armTightness: 0.2,
+      coreColor: [200, 170, 240], armColor: [140, 110, 200], dustColor: [80, 50, 140],
+      coreGlow: [180, 150, 255], opacity: 0.15 },
   ];
-  PLANET_DEFS.forEach(def => {
-    planets.push({
+
+  function renderGalaxyTexture(def) {
+    const s = def.size * 2;
+    const offscreen = document.createElement('canvas');
+    offscreen.width = s;
+    offscreen.height = s;
+    const oc = offscreen.getContext('2d');
+    const cx = s / 2, cy = s / 2;
+
+    // Core glow — multiple layers for depth
+    for (let layer = 0; layer < 3; layer++) {
+      const r = def.size * (0.08 + layer * 0.12);
+      const alpha = (0.6 - layer * 0.15);
+      const g = oc.createRadialGradient(cx, cy, 0, cx, cy, r);
+      g.addColorStop(0, `rgba(${def.coreGlow[0]},${def.coreGlow[1]},${def.coreGlow[2]},${alpha})`);
+      g.addColorStop(0.4, `rgba(${def.coreColor[0]},${def.coreColor[1]},${def.coreColor[2]},${alpha * 0.4})`);
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      oc.fillStyle = g;
+      oc.beginPath();
+      oc.arc(cx, cy, r, 0, Math.PI * 2);
+      oc.fill();
+    }
+
+    // Spiral arms (particle-based for natural look)
+    if (def.arms > 0) {
+      const particleCount = 3000;
+      for (let i = 0; i < particleCount; i++) {
+        const armIndex = i % def.arms;
+        const armOffset = (armIndex / def.arms) * Math.PI * 2;
+        const dist = Math.random() * def.size * 0.9;
+        const angle = armOffset + dist * def.armTightness + (Math.random() - 0.5) * 0.5;
+        // spread increases with distance
+        const spread = (Math.random() - 0.5) * (4 + dist * 0.12);
+        const px = cx + Math.cos(angle) * dist + Math.cos(angle + Math.PI / 2) * spread;
+        const py = cy + Math.sin(angle) * dist + Math.sin(angle + Math.PI / 2) * spread;
+
+        const distRatio = dist / def.size;
+        const alpha = (1 - distRatio) * 0.15 * (0.3 + Math.random() * 0.7);
+        const size = 0.5 + Math.random() * 1.5;
+
+        // Mix arm and dust colors based on distance
+        const isNewStar = Math.random() > 0.6;
+        const c = isNewStar ? def.armColor : def.dustColor;
+        oc.fillStyle = `rgba(${c[0]},${c[1]},${c[2]},${alpha})`;
+        oc.beginPath();
+        oc.arc(px, py, size, 0, Math.PI * 2);
+        oc.fill();
+      }
+
+      // Bright knots in the arms (star-forming regions)
+      for (let i = 0; i < 40; i++) {
+        const armIndex = i % def.arms;
+        const armOffset = (armIndex / def.arms) * Math.PI * 2;
+        const dist = 15 + Math.random() * def.size * 0.7;
+        const angle = armOffset + dist * def.armTightness;
+        const px = cx + Math.cos(angle) * dist;
+        const py = cy + Math.sin(angle) * dist;
+        const r = 2 + Math.random() * 4;
+        const g = oc.createRadialGradient(px, py, 0, px, py, r);
+        g.addColorStop(0, `rgba(${def.armColor[0]},${def.armColor[1]},${def.armColor[2]},0.2)`);
+        g.addColorStop(1, 'rgba(0,0,0,0)');
+        oc.fillStyle = g;
+        oc.beginPath();
+        oc.arc(px, py, r, 0, Math.PI * 2);
+        oc.fill();
+      }
+    } else {
+      // Elliptical galaxy — smooth particle cloud
+      for (let i = 0; i < 2000; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const dist = Math.random() * def.size * 0.8;
+        const px = cx + Math.cos(angle) * dist * (0.6 + Math.random() * 0.4);
+        const py = cy + Math.sin(angle) * dist * (0.4 + Math.random() * 0.3);
+        const alpha = (1 - dist / def.size) * 0.08;
+        oc.fillStyle = `rgba(${def.coreColor[0]},${def.coreColor[1]},${def.coreColor[2]},${alpha})`;
+        oc.beginPath();
+        oc.arc(px, py, 0.5 + Math.random(), 0, Math.PI * 2);
+        oc.fill();
+      }
+    }
+
+    // Outer halo
+    const halo = oc.createRadialGradient(cx, cy, def.size * 0.3, cx, cy, def.size);
+    halo.addColorStop(0, `rgba(${def.coreGlow[0]},${def.coreGlow[1]},${def.coreGlow[2]},0.03)`);
+    halo.addColorStop(1, 'rgba(0,0,0,0)');
+    oc.fillStyle = halo;
+    oc.beginPath();
+    oc.arc(cx, cy, def.size, 0, Math.PI * 2);
+    oc.fill();
+
+    return offscreen;
+  }
+
+  // Place galaxies and pre-render their textures
+  const galaxies = GALAXY_DEFS.map(def => {
+    const texture = renderGalaxyTexture(def);
+    return {
       ...def,
-      x: 100 + Math.random() * (W - 200),
-      y: 100 + Math.random() * (H - 200),
-      vx: (Math.random() - 0.5) * 0.15,
-      vy: (Math.random() - 0.5) * 0.1,
-    });
+      texture,
+      x: 80 + Math.random() * (W - 160),
+      y: 80 + Math.random() * (H - 160),
+      rotationSpeed: (Math.random() - 0.5) * 0.015,
+      currentRotation: def.rotation,
+    };
   });
 
-  function drawPlanet(p) {
-    const { x, y, radius, color, glow, ring } = p;
-    const g1 = ctx.createRadialGradient(x, y, radius * 0.5, x, y, radius * 4);
-    g1.addColorStop(0, `rgba(${glow[0]},${glow[1]},${glow[2]},0.15)`);
-    g1.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = g1;
-    ctx.beginPath();
-    ctx.arc(x, y, radius * 4, 0, Math.PI * 2);
-    ctx.fill();
-    const g2 = ctx.createRadialGradient(x - radius * 0.3, y - radius * 0.3, 0, x, y, radius);
-    g2.addColorStop(0, `rgb(${Math.min(255, color[0] + 60)},${Math.min(255, color[1] + 60)},${Math.min(255, color[2] + 60)})`);
-    g2.addColorStop(1, `rgb(${color[0] * 0.5 | 0},${color[1] * 0.5 | 0},${color[2] * 0.5 | 0})`);
-    ctx.fillStyle = g2;
-    ctx.beginPath();
-    ctx.arc(x, y, radius, 0, Math.PI * 2);
-    ctx.fill();
-    if (ring) {
+  function drawGalaxies(t) {
+    for (const g of galaxies) {
+      g.currentRotation += g.rotationSpeed;
       ctx.save();
-      ctx.translate(x, y);
-      ctx.scale(1, 0.35);
-      ctx.strokeStyle = `rgba(${glow[0]},${glow[1]},${glow[2]},0.4)`;
-      ctx.lineWidth = 2.5;
-      ctx.beginPath();
-      ctx.arc(0, 0, radius * 1.8, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.strokeStyle = `rgba(${glow[0]},${glow[1]},${glow[2]},0.2)`;
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.arc(0, 0, radius * 2.2, 0, Math.PI * 2);
-      ctx.stroke();
+      ctx.translate(g.x, g.y);
+      ctx.rotate(g.currentRotation);
+      ctx.scale(1, 1 - g.tilt * 0.7); // tilt by squashing vertically
+      ctx.globalAlpha = g.opacity;
+      ctx.drawImage(g.texture, -g.size, -g.size);
       ctx.restore();
     }
+    ctx.globalAlpha = 1;
   }
 
   // --- Nebula clouds ---
@@ -240,40 +279,10 @@
   const CONNECT_RADIUS = 160;
   const MAX_CONNECTIONS = 8;
 
-  let hoverStart = 0;
-  let hoveredConstellation = null;
-  let lastConnectedStars = [];
-  const HOVER_DELAY = 1200;
-
-  function showConstellationInfo(c) {
-    // Build tooltip using safe DOM methods
-    infoEl.textContent = '';
-
-    const h3 = document.createElement('h3');
-    h3.textContent = c.name;
-    infoEl.appendChild(h3);
-
-    const latin = document.createElement('span');
-    latin.className = 'latin';
-    latin.textContent = c.latin;
-    infoEl.appendChild(latin);
-
-    const desc = document.createTextNode(c.desc);
-    infoEl.appendChild(desc);
-
-    const starsDiv = document.createElement('div');
-    starsDiv.className = 'stars-count';
-    starsDiv.textContent = c.stars + ' principal stars';
-    infoEl.appendChild(starsDiv);
-  }
-
   addEventListener('mousemove', e => {
     mouse.x = e.clientX;
     mouse.y = e.clientY;
     mouse.active = true;
-    hoverStart = performance.now();
-    hoveredConstellation = null;
-    infoEl.style.opacity = '0';
   });
   addEventListener('mouseleave', () => { mouse.active = false; });
   addEventListener('touchmove', e => {
@@ -281,21 +290,11 @@
     mouse.x = t.clientX;
     mouse.y = t.clientY;
     mouse.active = true;
-    hoverStart = performance.now();
   });
   addEventListener('touchend', () => { mouse.active = false; });
 
-  function pickConstellation(connected) {
-    if (connected.length < 3) return null;
-    const hash = connected.reduce((a, s) => a + Math.floor(s.x * 7 + s.y * 13), 0);
-    return CONSTELLATIONS[hash % CONSTELLATIONS.length];
-  }
-
   function drawConnections() {
-    if (!mouse.active) {
-      lastConnectedStars = [];
-      return;
-    }
+    if (!mouse.active) return;
 
     const nearby = [];
     for (const s of stars) {
@@ -308,7 +307,6 @@
     }
     nearby.sort((a, b) => a.dist - b.dist);
     const connected = nearby.slice(0, MAX_CONNECTIONS);
-    lastConnectedStars = connected.map(c => c.star);
 
     // Lines from cursor to stars
     for (const { star, dist } of connected) {
@@ -358,43 +356,6 @@
     ctx.beginPath();
     ctx.arc(mouse.x, mouse.y, CONNECT_RADIUS, 0, Math.PI * 2);
     ctx.fill();
-
-    // Hover constellation info
-    const now = performance.now();
-    if (connected.length >= 3 && now - hoverStart > HOVER_DELAY) {
-      const c = pickConstellation(lastConnectedStars);
-      if (c && hoveredConstellation !== c) {
-        hoveredConstellation = c;
-        showConstellationInfo(c);
-        let ix = mouse.x + 20;
-        let iy = mouse.y - 30;
-        if (ix + 290 > W) ix = mouse.x - 300;
-        if (iy + 200 > H) iy = H - 210;
-        if (iy < 10) iy = 10;
-        infoEl.style.left = ix + 'px';
-        infoEl.style.top = iy + 'px';
-        infoEl.style.opacity = '1';
-
-        // Highlight with constellation color
-        for (let i = 0; i < connected.length - 1; i++) {
-          for (let j = i + 1; j < connected.length; j++) {
-            const a = connected[i].star;
-            const b = connected[j].star;
-            const dx = a.x - b.x;
-            const dy = a.y - b.y;
-            const d = Math.sqrt(dx * dx + dy * dy);
-            if (d < CONNECT_RADIUS * 1.2) {
-              ctx.strokeStyle = `rgba(${c.color[0]},${c.color[1]},${c.color[2]}, 0.5)`;
-              ctx.lineWidth = 1.2;
-              ctx.beginPath();
-              ctx.moveTo(a.x, a.y);
-              ctx.lineTo(b.x, b.y);
-              ctx.stroke();
-            }
-          }
-        }
-      }
-    }
   }
 
   // --- Shooting stars ---
@@ -449,16 +410,9 @@
     ctx.fillRect(0, 0, W, H);
 
     drawNebulae();
+    drawGalaxies(t);
 
     for (const s of stars) { s.update(t); s.draw(); }
-
-    for (const p of planets) {
-      p.x += p.vx;
-      p.y += p.vy;
-      if (p.x < -50 || p.x > W + 50) p.vx *= -1;
-      if (p.y < -50 || p.y > H + 50) p.vy *= -1;
-      drawPlanet(p);
-    }
 
     maybeSpawnShootingStar();
     updateShootingStars();
