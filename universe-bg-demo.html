@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Universe Background Demo</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    overflow: hidden;
+    background: #000;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    cursor: crosshair;
+  }
+
+  canvas { display: block; position: fixed; top: 0; left: 0; z-index: 0; }
+
+  /* Constellation info tooltip */
+  #constellation-info {
+    position: fixed;
+    z-index: 10;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    max-width: 280px;
+    background: rgba(10, 10, 40, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(120, 140, 255, 0.3);
+    border-radius: 12px;
+    padding: 16px 20px;
+    color: #c8d0ff;
+    font-size: 13px;
+    line-height: 1.5;
+    box-shadow: 0 0 30px rgba(80, 100, 255, 0.15), inset 0 0 20px rgba(80, 100, 255, 0.05);
+  }
+  #constellation-info h3 {
+    font-size: 16px;
+    color: #e0e8ff;
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  #constellation-info .latin {
+    font-style: italic;
+    color: #8090cc;
+    font-size: 12px;
+    margin-bottom: 8px;
+    display: block;
+  }
+  #constellation-info .stars-count {
+    font-size: 11px;
+    color: #6a7ab8;
+    margin-top: 8px;
+  }
+
+  /* Demo content overlay */
+  #demo-content {
+    position: fixed;
+    z-index: 5;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: rgba(200, 210, 255, 0.7);
+    pointer-events: none;
+    user-select: none;
+  }
+  #demo-content h1 {
+    font-size: 42px;
+    font-weight: 700;
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    color: rgba(220, 225, 255, 0.85);
+    text-shadow: 0 0 40px rgba(100, 120, 255, 0.3);
+    margin-bottom: 12px;
+  }
+  #demo-content p {
+    font-size: 15px;
+    letter-spacing: 2px;
+    opacity: 0.5;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="universe"></canvas>
+
+<div id="constellation-info"></div>
+
+<div id="demo-content">
+  <h1>Universe Background</h1>
+  <p>Move your mouse to connect the stars</p>
+</div>
+
+<script>
+(() => {
+  const canvas = document.getElementById('universe');
+  const ctx = canvas.getContext('2d');
+  const infoEl = document.getElementById('constellation-info');
+
+  let W, H;
+  const resize = () => { W = canvas.width = innerWidth; H = canvas.height = innerHeight; };
+  resize();
+  addEventListener('resize', resize);
+
+  // --- Constellation data ---
+  const CONSTELLATIONS = [
+    { name: 'Orion', latin: 'Orion, the Hunter', desc: 'One of the most recognizable constellations, visible worldwide. Named after a hunter in Greek mythology, it contains the bright stars Betelgeuse and Rigel, and the iconic three-star belt.', stars: 7, color: [130, 170, 255] },
+    { name: 'Ursa Major', latin: 'Ursa Major, the Great Bear', desc: 'Home to the Big Dipper asterism. Used for centuries by navigators to find Polaris, the North Star. The third-largest constellation in the sky.', stars: 7, color: [180, 200, 255] },
+    { name: 'Cassiopeia', latin: 'Cassiopeia, the Queen', desc: 'Easily recognized by its distinctive W shape. Named after a vain queen in Greek mythology who boasted of her beauty. Visible year-round in the northern hemisphere.', stars: 5, color: [200, 180, 255] },
+    { name: 'Lyra', latin: 'Lyra, the Lyre', desc: 'A small constellation containing Vega, one of the brightest stars in the sky and part of the Summer Triangle. Represents the lyre of Orpheus.', stars: 5, color: [160, 200, 240] },
+    { name: 'Scorpius', latin: 'Scorpius, the Scorpion', desc: 'A zodiac constellation with the brilliant red supergiant Antares at its heart. Its curving tail of stars is one of the most striking patterns in the southern sky.', stars: 6, color: [255, 160, 130] },
+    { name: 'Cygnus', latin: 'Cygnus, the Swan', desc: 'Also known as the Northern Cross. Contains Deneb, one of the most luminous stars known. Lies along the Milky Way and is rich in deep-sky objects.', stars: 5, color: [140, 200, 255] },
+    { name: 'Leo', latin: 'Leo, the Lion', desc: 'A zodiac constellation recognizable by its sickle-shaped head. Its brightest star, Regulus, sits almost exactly on the ecliptic. Associated with the Nemean Lion of Greek myth.', stars: 6, color: [255, 200, 140] },
+    { name: 'Gemini', latin: 'Gemini, the Twins', desc: 'Named for the twins Castor and Pollux from Greek mythology, who are also its two brightest stars. A zodiac constellation and the radiant of the Geminid meteor shower.', stars: 6, color: [170, 220, 200] },
+  ];
+
+  // --- Stars ---
+  const STAR_COUNT = 600;
+  const stars = [];
+
+  class Star {
+    constructor() { this.reset(); }
+    reset() {
+      this.x = Math.random() * W;
+      this.y = Math.random() * H;
+      this.z = Math.random();
+      this.baseRadius = 0.4 + Math.random() * 1.8;
+      this.radius = this.baseRadius * (0.5 + this.z * 0.5);
+      this.twinkleSpeed = 0.5 + Math.random() * 2;
+      this.twinkleOffset = Math.random() * Math.PI * 2;
+      const tints = [[255,255,255],[200,220,255],[255,240,200],[255,200,180],[180,200,255]];
+      this.tint = tints[Math.floor(Math.random() * tints.length)];
+      this.vx = (Math.random() - 0.5) * 0.08;
+      this.vy = (Math.random() - 0.5) * 0.04;
+    }
+    update(t) {
+      this.x += this.vx;
+      this.y += this.vy;
+      if (this.x < -10) this.x = W + 10;
+      if (this.x > W + 10) this.x = -10;
+      if (this.y < -10) this.y = H + 10;
+      if (this.y > H + 10) this.y = -10;
+      this.brightness = 0.4 + 0.6 * ((Math.sin(t * this.twinkleSpeed + this.twinkleOffset) + 1) / 2);
+    }
+    draw() {
+      const r = this.radius;
+      const b = this.brightness;
+      const [cr, cg, cb] = this.tint;
+      const grad = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, r * 4);
+      grad.addColorStop(0, `rgba(${cr},${cg},${cb},${b * 0.7})`);
+      grad.addColorStop(0.3, `rgba(${cr},${cg},${cb},${b * 0.15})`);
+      grad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, r * 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = `rgba(${cr},${cg},${cb},${b})`;
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  for (let i = 0; i < STAR_COUNT; i++) stars.push(new Star());
+
+  // --- Planets ---
+  const planets = [];
+  const PLANET_DEFS = [
+    { radius: 14, color: [200, 120, 80], glow: [255, 140, 80], ring: false, name: 'Mars' },
+    { radius: 22, color: [180, 160, 120], glow: [220, 200, 150], ring: true, name: 'Saturn' },
+    { radius: 10, color: [100, 140, 200], glow: [120, 160, 255], ring: false, name: 'Neptune' },
+  ];
+  PLANET_DEFS.forEach(def => {
+    planets.push({
+      ...def,
+      x: 100 + Math.random() * (W - 200),
+      y: 100 + Math.random() * (H - 200),
+      vx: (Math.random() - 0.5) * 0.15,
+      vy: (Math.random() - 0.5) * 0.1,
+    });
+  });
+
+  function drawPlanet(p) {
+    const { x, y, radius, color, glow, ring } = p;
+    const g1 = ctx.createRadialGradient(x, y, radius * 0.5, x, y, radius * 4);
+    g1.addColorStop(0, `rgba(${glow[0]},${glow[1]},${glow[2]},0.15)`);
+    g1.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g1;
+    ctx.beginPath();
+    ctx.arc(x, y, radius * 4, 0, Math.PI * 2);
+    ctx.fill();
+    const g2 = ctx.createRadialGradient(x - radius * 0.3, y - radius * 0.3, 0, x, y, radius);
+    g2.addColorStop(0, `rgb(${Math.min(255, color[0] + 60)},${Math.min(255, color[1] + 60)},${Math.min(255, color[2] + 60)})`);
+    g2.addColorStop(1, `rgb(${color[0] * 0.5 | 0},${color[1] * 0.5 | 0},${color[2] * 0.5 | 0})`);
+    ctx.fillStyle = g2;
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fill();
+    if (ring) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(1, 0.35);
+      ctx.strokeStyle = `rgba(${glow[0]},${glow[1]},${glow[2]},0.4)`;
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.arc(0, 0, radius * 1.8, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.strokeStyle = `rgba(${glow[0]},${glow[1]},${glow[2]},0.2)`;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(0, 0, radius * 2.2, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  // --- Nebula clouds ---
+  function drawNebulae() {
+    const nebulae = [
+      { x: W * 0.2, y: H * 0.3, r: 250, color: [60, 30, 100] },
+      { x: W * 0.75, y: H * 0.7, r: 300, color: [30, 50, 100] },
+      { x: W * 0.5, y: H * 0.15, r: 200, color: [80, 30, 60] },
+    ];
+    nebulae.forEach(n => {
+      const g = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.r);
+      g.addColorStop(0, `rgba(${n.color[0]},${n.color[1]},${n.color[2]},0.08)`);
+      g.addColorStop(0.5, `rgba(${n.color[0]},${n.color[1]},${n.color[2]},0.03)`);
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+
+  // --- Mouse interaction ---
+  const mouse = { x: -1000, y: -1000, active: false };
+  const CONNECT_RADIUS = 160;
+  const MAX_CONNECTIONS = 8;
+
+  let hoverStart = 0;
+  let hoveredConstellation = null;
+  let lastConnectedStars = [];
+  const HOVER_DELAY = 1200;
+
+  function showConstellationInfo(c) {
+    // Build tooltip using safe DOM methods
+    infoEl.textContent = '';
+
+    const h3 = document.createElement('h3');
+    h3.textContent = c.name;
+    infoEl.appendChild(h3);
+
+    const latin = document.createElement('span');
+    latin.className = 'latin';
+    latin.textContent = c.latin;
+    infoEl.appendChild(latin);
+
+    const desc = document.createTextNode(c.desc);
+    infoEl.appendChild(desc);
+
+    const starsDiv = document.createElement('div');
+    starsDiv.className = 'stars-count';
+    starsDiv.textContent = c.stars + ' principal stars';
+    infoEl.appendChild(starsDiv);
+  }
+
+  addEventListener('mousemove', e => {
+    mouse.x = e.clientX;
+    mouse.y = e.clientY;
+    mouse.active = true;
+    hoverStart = performance.now();
+    hoveredConstellation = null;
+    infoEl.style.opacity = '0';
+  });
+  addEventListener('mouseleave', () => { mouse.active = false; });
+  addEventListener('touchmove', e => {
+    const t = e.touches[0];
+    mouse.x = t.clientX;
+    mouse.y = t.clientY;
+    mouse.active = true;
+    hoverStart = performance.now();
+  });
+  addEventListener('touchend', () => { mouse.active = false; });
+
+  function pickConstellation(connected) {
+    if (connected.length < 3) return null;
+    const hash = connected.reduce((a, s) => a + Math.floor(s.x * 7 + s.y * 13), 0);
+    return CONSTELLATIONS[hash % CONSTELLATIONS.length];
+  }
+
+  function drawConnections() {
+    if (!mouse.active) {
+      lastConnectedStars = [];
+      return;
+    }
+
+    const nearby = [];
+    for (const s of stars) {
+      const dx = s.x - mouse.x;
+      const dy = s.y - mouse.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < CONNECT_RADIUS) {
+        nearby.push({ star: s, dist });
+      }
+    }
+    nearby.sort((a, b) => a.dist - b.dist);
+    const connected = nearby.slice(0, MAX_CONNECTIONS);
+    lastConnectedStars = connected.map(c => c.star);
+
+    // Lines from cursor to stars
+    for (const { star, dist } of connected) {
+      const alpha = (1 - dist / CONNECT_RADIUS) * 0.6;
+      ctx.strokeStyle = `rgba(120, 160, 255, ${alpha})`;
+      ctx.lineWidth = 0.8;
+      ctx.beginPath();
+      ctx.moveTo(mouse.x, mouse.y);
+      ctx.lineTo(star.x, star.y);
+      ctx.stroke();
+      const grad = ctx.createRadialGradient(star.x, star.y, 0, star.x, star.y, star.radius * 6);
+      grad.addColorStop(0, `rgba(150, 180, 255, ${alpha * 0.5})`);
+      grad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(star.x, star.y, star.radius * 6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Inter-star constellation lines
+    if (connected.length >= 2) {
+      for (let i = 0; i < connected.length - 1; i++) {
+        for (let j = i + 1; j < connected.length; j++) {
+          const a = connected[i].star;
+          const b = connected[j].star;
+          const dx = a.x - b.x;
+          const dy = a.y - b.y;
+          const d = Math.sqrt(dx * dx + dy * dy);
+          if (d < CONNECT_RADIUS * 1.2) {
+            const alpha = (1 - d / (CONNECT_RADIUS * 1.2)) * 0.25;
+            ctx.strokeStyle = `rgba(100, 140, 255, ${alpha})`;
+            ctx.lineWidth = 0.5;
+            ctx.beginPath();
+            ctx.moveTo(a.x, a.y);
+            ctx.lineTo(b.x, b.y);
+            ctx.stroke();
+          }
+        }
+      }
+    }
+
+    // Cursor glow
+    const cg = ctx.createRadialGradient(mouse.x, mouse.y, 0, mouse.x, mouse.y, CONNECT_RADIUS);
+    cg.addColorStop(0, 'rgba(100, 140, 255, 0.06)');
+    cg.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = cg;
+    ctx.beginPath();
+    ctx.arc(mouse.x, mouse.y, CONNECT_RADIUS, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Hover constellation info
+    const now = performance.now();
+    if (connected.length >= 3 && now - hoverStart > HOVER_DELAY) {
+      const c = pickConstellation(lastConnectedStars);
+      if (c && hoveredConstellation !== c) {
+        hoveredConstellation = c;
+        showConstellationInfo(c);
+        let ix = mouse.x + 20;
+        let iy = mouse.y - 30;
+        if (ix + 290 > W) ix = mouse.x - 300;
+        if (iy + 200 > H) iy = H - 210;
+        if (iy < 10) iy = 10;
+        infoEl.style.left = ix + 'px';
+        infoEl.style.top = iy + 'px';
+        infoEl.style.opacity = '1';
+
+        // Highlight with constellation color
+        for (let i = 0; i < connected.length - 1; i++) {
+          for (let j = i + 1; j < connected.length; j++) {
+            const a = connected[i].star;
+            const b = connected[j].star;
+            const dx = a.x - b.x;
+            const dy = a.y - b.y;
+            const d = Math.sqrt(dx * dx + dy * dy);
+            if (d < CONNECT_RADIUS * 1.2) {
+              ctx.strokeStyle = `rgba(${c.color[0]},${c.color[1]},${c.color[2]}, 0.5)`;
+              ctx.lineWidth = 1.2;
+              ctx.beginPath();
+              ctx.moveTo(a.x, a.y);
+              ctx.lineTo(b.x, b.y);
+              ctx.stroke();
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // --- Shooting stars ---
+  const shootingStars = [];
+  function maybeSpawnShootingStar() {
+    if (Math.random() < 0.003 && shootingStars.length < 2) {
+      const angle = -Math.PI / 6 + Math.random() * -Math.PI / 4;
+      shootingStars.push({
+        x: Math.random() * W,
+        y: Math.random() * H * 0.4,
+        vx: Math.cos(angle) * (4 + Math.random() * 4),
+        vy: -Math.sin(angle) * (4 + Math.random() * 4),
+        life: 1,
+        decay: 0.015 + Math.random() * 0.01,
+        len: 40 + Math.random() * 60,
+      });
+    }
+  }
+  function updateShootingStars() {
+    for (let i = shootingStars.length - 1; i >= 0; i--) {
+      const s = shootingStars[i];
+      s.x += s.vx;
+      s.y += s.vy;
+      s.life -= s.decay;
+      if (s.life <= 0) { shootingStars.splice(i, 1); continue; }
+      const alpha = s.life * 0.8;
+      const speed = Math.sqrt(s.vx * s.vx + s.vy * s.vy);
+      const tailX = s.x - s.vx * (s.len / speed) * s.life;
+      const tailY = s.y - s.vy * (s.len / speed) * s.life;
+      const grad = ctx.createLinearGradient(s.x, s.y, tailX, tailY);
+      grad.addColorStop(0, `rgba(255, 255, 255, ${alpha})`);
+      grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+      ctx.strokeStyle = grad;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(s.x, s.y);
+      ctx.lineTo(tailX, tailY);
+      ctx.stroke();
+    }
+  }
+
+  // --- Main loop ---
+  function frame(ts) {
+    const t = ts / 1000;
+    ctx.clearRect(0, 0, W, H);
+
+    const bg = ctx.createLinearGradient(0, 0, 0, H);
+    bg.addColorStop(0, '#05050f');
+    bg.addColorStop(0.5, '#0a0a1a');
+    bg.addColorStop(1, '#060612');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, W, H);
+
+    drawNebulae();
+
+    for (const s of stars) { s.update(t); s.draw(); }
+
+    for (const p of planets) {
+      p.x += p.vx;
+      p.y += p.vy;
+      if (p.x < -50 || p.x > W + 50) p.vx *= -1;
+      if (p.y < -50 || p.y > H + 50) p.vy *= -1;
+      drawPlanet(p);
+    }
+
+    maybeSpawnShootingStar();
+    updateShootingStars();
+    drawConnections();
+
+    requestAnimationFrame(frame);
+  }
+
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
