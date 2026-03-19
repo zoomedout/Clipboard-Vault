@@ -112,45 +112,61 @@
 
   for (let i = 0; i < STAR_COUNT; i++) stars.push(new Star());
 
-  // --- Distant galaxies (pre-rendered to offscreen canvases) ---
+  // --- High-fidelity distant galaxies (pre-rendered to offscreen canvases) ---
   const GALAXY_DEFS = [
-    // Spiral galaxy — warm golden arms
-    { size: 120, tilt: 0.28, rotation: 0.4, arms: 2, armTightness: 0.3,
-      coreColor: [255, 230, 180], armColor: [200, 160, 120], dustColor: [120, 80, 50],
-      coreGlow: [255, 200, 140], opacity: 0.35 },
-    // Spiral galaxy — cool blue
-    { size: 90, tilt: 0.4, rotation: -0.7, arms: 3, armTightness: 0.25,
-      coreColor: [180, 200, 255], armColor: [100, 140, 220], dustColor: [50, 70, 140],
-      coreGlow: [140, 170, 255], opacity: 0.25 },
-    // Elliptical galaxy — soft red/pink
-    { size: 60, tilt: 0.5, rotation: 0, arms: 0, armTightness: 0,
-      coreColor: [255, 180, 160], armColor: [200, 120, 100], dustColor: [140, 60, 60],
-      coreGlow: [255, 150, 130], opacity: 0.2 },
-    // Tiny edge-on spiral
-    { size: 50, tilt: 0.85, rotation: 1.2, arms: 2, armTightness: 0.35,
-      coreColor: [220, 210, 200], armColor: [160, 150, 140], dustColor: [100, 80, 70],
-      coreGlow: [240, 230, 210], opacity: 0.18 },
-    // Large faint spiral — violet
-    { size: 140, tilt: 0.2, rotation: 2.0, arms: 2, armTightness: 0.2,
-      coreColor: [200, 170, 240], armColor: [140, 110, 200], dustColor: [80, 50, 140],
-      coreGlow: [180, 150, 255], opacity: 0.15 },
+    // Grand-design spiral — warm Andromeda-like
+    { size: 160, tilt: 0.25, rotation: 0.4, arms: 2, armTightness: 0.22,
+      coreColor: [255, 235, 190], armColor: [180, 200, 255], dustColor: [90, 60, 30],
+      hiiColor: [255, 100, 120], coreGlow: [255, 220, 160], opacity: 0.4,
+      bulgeRatio: 0.18, diskParticles: 12000, armWidth: 0.15 },
+    // Barred spiral — blue-white arms
+    { size: 110, tilt: 0.35, rotation: -0.7, arms: 2, armTightness: 0.18,
+      coreColor: [200, 210, 255], armColor: [140, 180, 255], dustColor: [40, 50, 100],
+      hiiColor: [200, 130, 255], coreGlow: [170, 190, 255], opacity: 0.3,
+      bulgeRatio: 0.25, diskParticles: 10000, armWidth: 0.12, barred: true },
+    // Elliptical galaxy — old red population
+    { size: 70, tilt: 0.45, rotation: 0, arms: 0, armTightness: 0,
+      coreColor: [255, 200, 160], armColor: [220, 160, 120], dustColor: [160, 100, 70],
+      hiiColor: [255, 180, 150], coreGlow: [255, 190, 140], opacity: 0.22,
+      bulgeRatio: 0.6, diskParticles: 6000, armWidth: 0 },
+    // Edge-on spiral with dust lane
+    { size: 80, tilt: 0.88, rotation: 1.2, arms: 2, armTightness: 0.28,
+      coreColor: [240, 225, 200], armColor: [170, 180, 200], dustColor: [60, 45, 30],
+      hiiColor: [255, 120, 140], coreGlow: [250, 235, 210], opacity: 0.25,
+      bulgeRatio: 0.15, diskParticles: 8000, armWidth: 0.1 },
+    // Faint distant spiral — violet/blue
+    { size: 180, tilt: 0.15, rotation: 2.0, arms: 3, armTightness: 0.15,
+      coreColor: [210, 185, 245], armColor: [150, 140, 230], dustColor: [60, 40, 110],
+      hiiColor: [220, 140, 255], coreGlow: [190, 165, 255], opacity: 0.18,
+      bulgeRatio: 0.12, diskParticles: 14000, armWidth: 0.18 },
   ];
 
-  function renderGalaxyTexture(def) {
-    const s = def.size * 2;
-    const offscreen = document.createElement('canvas');
-    offscreen.width = s;
-    offscreen.height = s;
-    const oc = offscreen.getContext('2d');
-    const cx = s / 2, cy = s / 2;
+  // Sérsic-like luminosity profile for realistic brightness falloff
+  function sersicBrightness(r, re, n) {
+    const bn = 1.9992 * n - 0.3271;
+    return Math.exp(-bn * (Math.pow(r / re, 1 / n) - 1));
+  }
 
-    // Core glow — multiple layers for depth
-    for (let layer = 0; layer < 3; layer++) {
-      const r = def.size * (0.08 + layer * 0.12);
-      const alpha = (0.6 - layer * 0.15);
+  // Logarithmic spiral: r = a * e^(b*theta)
+  function logSpiralAngle(dist, tightness) {
+    return Math.log(dist + 1) / tightness;
+  }
+
+  function renderGalaxyTexture(def) {
+    const pad = 1.4; // extra room for halo
+    const canvasSize = Math.ceil(def.size * 2 * pad);
+    const offscreen = document.createElement('canvas');
+    offscreen.width = canvasSize;
+    offscreen.height = canvasSize;
+    const oc = offscreen.getContext('2d');
+    const cx = canvasSize / 2, cy = canvasSize / 2;
+
+    // --- 1. Diffuse halo (dark matter / old stars) ---
+    for (let layer = 0; layer < 4; layer++) {
+      const r = def.size * (0.6 + layer * 0.25);
+      const alpha = 0.012 - layer * 0.002;
       const g = oc.createRadialGradient(cx, cy, 0, cx, cy, r);
       g.addColorStop(0, `rgba(${def.coreGlow[0]},${def.coreGlow[1]},${def.coreGlow[2]},${alpha})`);
-      g.addColorStop(0.4, `rgba(${def.coreColor[0]},${def.coreColor[1]},${def.coreColor[2]},${alpha * 0.4})`);
       g.addColorStop(1, 'rgba(0,0,0,0)');
       oc.fillStyle = g;
       oc.beginPath();
@@ -158,85 +174,219 @@
       oc.fill();
     }
 
-    // Spiral arms (particle-based for natural look)
+    // --- 2. Bulge with Sérsic profile ---
+    const bulgeR = def.size * def.bulgeRatio;
+    const bulgeSteps = 30;
+    for (let i = bulgeSteps; i > 0; i--) {
+      const frac = i / bulgeSteps;
+      const r = bulgeR * frac;
+      const brightness = sersicBrightness(r, bulgeR * 0.4, 4) * 0.7;
+      const g = oc.createRadialGradient(cx, cy, 0, cx, cy, r);
+      // Warm yellow-white core fading to orange at edges
+      const warmth = frac;
+      const cr = Math.min(255, def.coreGlow[0] + (1 - warmth) * 20);
+      const cg = Math.min(255, def.coreGlow[1] - (1 - warmth) * 20);
+      const cb = Math.min(255, def.coreGlow[2] - (1 - warmth) * 40);
+      g.addColorStop(0, `rgba(${cr | 0},${cg | 0},${cb | 0},${brightness})`);
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      oc.fillStyle = g;
+      oc.beginPath();
+      oc.arc(cx, cy, r, 0, Math.PI * 2);
+      oc.fill();
+    }
+
+    // --- 3. Disk stars (spiral or elliptical) ---
     if (def.arms > 0) {
-      const particleCount = 3000;
-      for (let i = 0; i < particleCount; i++) {
-        const armIndex = i % def.arms;
-        const armOffset = (armIndex / def.arms) * Math.PI * 2;
-        const dist = Math.random() * def.size * 0.9;
-        const angle = armOffset + dist * def.armTightness + (Math.random() - 0.5) * 0.5;
-        // spread increases with distance
-        const spread = (Math.random() - 0.5) * (4 + dist * 0.12);
-        const px = cx + Math.cos(angle) * dist + Math.cos(angle + Math.PI / 2) * spread;
-        const py = cy + Math.sin(angle) * dist + Math.sin(angle + Math.PI / 2) * spread;
+      const isBarred = def.barred || false;
 
+      // Pass 1: diffuse disk population (inter-arm stars)
+      const diskCount = def.diskParticles * 0.3;
+      for (let i = 0; i < diskCount; i++) {
+        const dist = Math.pow(Math.random(), 0.6) * def.size * 0.85;
+        const angle = Math.random() * Math.PI * 2;
+        const px = cx + Math.cos(angle) * dist;
+        const py = cy + Math.sin(angle) * dist;
         const distRatio = dist / def.size;
-        const alpha = (1 - distRatio) * 0.15 * (0.3 + Math.random() * 0.7);
-        const size = 0.5 + Math.random() * 1.5;
-
-        // Mix arm and dust colors based on distance
-        const isNewStar = Math.random() > 0.6;
-        const c = isNewStar ? def.armColor : def.dustColor;
-        oc.fillStyle = `rgba(${c[0]},${c[1]},${c[2]},${alpha})`;
+        const alpha = sersicBrightness(dist, def.size * 0.35, 1) * 0.04 * (0.5 + Math.random() * 0.5);
+        const size = 0.3 + Math.random() * 0.8;
+        // Old reddish population between arms
+        const r = def.coreColor[0] - 20;
+        const g = def.coreColor[1] - 30;
+        const b = def.coreColor[2] - 40;
+        oc.fillStyle = `rgba(${Math.max(0, r)},${Math.max(0, g)},${Math.max(0, b)},${alpha})`;
         oc.beginPath();
         oc.arc(px, py, size, 0, Math.PI * 2);
         oc.fill();
       }
 
-      // Bright knots in the arms (star-forming regions)
-      for (let i = 0; i < 40; i++) {
+      // Pass 2: logarithmic spiral arms
+      const armParticles = def.diskParticles * 0.7;
+      for (let i = 0; i < armParticles; i++) {
+        const armIndex = i % def.arms;
+        const armOffset = (armIndex / def.arms) * Math.PI * 2;
+        const dist = Math.pow(Math.random(), 0.5) * def.size * 0.92;
+        const spiralAngle = armOffset + logSpiralAngle(dist, def.armTightness);
+
+        // Bar distortion for barred spirals
+        let barOffset = 0;
+        if (isBarred && dist < def.size * 0.3) {
+          barOffset = (1 - dist / (def.size * 0.3)) * 0.5;
+        }
+
+        // Gaussian spread perpendicular to arm
+        const u1 = Math.random(), u2 = Math.random();
+        const gaussian = Math.sqrt(-2 * Math.log(u1 + 0.0001)) * Math.cos(2 * Math.PI * u2);
+        const spread = gaussian * def.size * def.armWidth * (0.5 + dist / def.size);
+
+        const angle = spiralAngle + barOffset;
+        const px = cx + Math.cos(angle) * dist + Math.cos(angle + Math.PI / 2) * spread;
+        const py = cy + Math.sin(angle) * dist + Math.sin(angle + Math.PI / 2) * spread;
+
+        const distRatio = dist / def.size;
+        // Brightness follows exponential disk profile
+        const diskBright = Math.exp(-dist / (def.size * 0.35));
+        // Arm enhancement — stars closer to arm center are brighter
+        const armProximity = Math.exp(-Math.abs(gaussian) * 0.8);
+        const alpha = diskBright * armProximity * 0.12 * (0.4 + Math.random() * 0.6);
+        const size = 0.3 + Math.random() * 1.2 + (1 - distRatio) * 0.5;
+
+        // Color: young blue stars in arms, redder between
+        const youngness = armProximity * (0.5 + distRatio * 0.5);
+        const cr = def.armColor[0] * youngness + def.dustColor[0] * (1 - youngness);
+        const cg = def.armColor[1] * youngness + def.dustColor[1] * (1 - youngness);
+        const cb = def.armColor[2] * youngness + def.dustColor[2] * (1 - youngness);
+        oc.fillStyle = `rgba(${cr | 0},${cg | 0},${cb | 0},${alpha})`;
+        oc.beginPath();
+        oc.arc(px, py, size, 0, Math.PI * 2);
+        oc.fill();
+      }
+
+      // --- 4. Dark dust lanes (drawn as semi-transparent dark streaks along inner arm edges) ---
+      oc.globalCompositeOperation = 'multiply';
+      const dustParticles = def.diskParticles * 0.15;
+      for (let i = 0; i < dustParticles; i++) {
+        const armIndex = i % def.arms;
+        const armOffset = (armIndex / def.arms) * Math.PI * 2;
+        const dist = Math.pow(Math.random(), 0.4) * def.size * 0.75;
+        const spiralAngle = armOffset + logSpiralAngle(dist, def.armTightness);
+        // Dust sits on the inner (leading) edge of the arm
+        const dustOffset = -def.size * def.armWidth * 0.4;
+        const angle = spiralAngle;
+        const px = cx + Math.cos(angle) * dist + Math.cos(angle + Math.PI / 2) * dustOffset;
+        const py = cy + Math.sin(angle) * dist + Math.sin(angle + Math.PI / 2) * dustOffset;
+        const spreadX = (Math.random() - 0.5) * def.size * def.armWidth * 0.6;
+        const spreadY = (Math.random() - 0.5) * def.size * def.armWidth * 0.6;
+
+        const distRatio = dist / def.size;
+        const alpha = (1 - distRatio) * 0.06 * (0.5 + Math.random() * 0.5);
+        const size = 1 + Math.random() * 3;
+
+        oc.fillStyle = `rgba(${def.dustColor[0] * 0.3 | 0},${def.dustColor[1] * 0.3 | 0},${def.dustColor[2] * 0.3 | 0},${alpha})`;
+        oc.beginPath();
+        oc.arc(px + spreadX, py + spreadY, size, 0, Math.PI * 2);
+        oc.fill();
+      }
+      oc.globalCompositeOperation = 'source-over';
+
+      // --- 5. HII regions (bright pink/red star-forming blobs) ---
+      const hiiCount = 30 + Math.floor(Math.random() * 40);
+      for (let i = 0; i < hiiCount; i++) {
         const armIndex = i % def.arms;
         const armOffset = (armIndex / def.arms) * Math.PI * 2;
         const dist = 15 + Math.random() * def.size * 0.7;
-        const angle = armOffset + dist * def.armTightness;
-        const px = cx + Math.cos(angle) * dist;
-        const py = cy + Math.sin(angle) * dist;
-        const r = 2 + Math.random() * 4;
+        const spiralAngle = armOffset + logSpiralAngle(dist, def.armTightness);
+        const spread = (Math.random() - 0.5) * def.size * def.armWidth * 1.5;
+        const px = cx + Math.cos(spiralAngle) * dist + Math.cos(spiralAngle + Math.PI / 2) * spread;
+        const py = cy + Math.sin(spiralAngle) * dist + Math.sin(spiralAngle + Math.PI / 2) * spread;
+        const r = 1.5 + Math.random() * 5;
         const g = oc.createRadialGradient(px, py, 0, px, py, r);
-        g.addColorStop(0, `rgba(${def.armColor[0]},${def.armColor[1]},${def.armColor[2]},0.2)`);
+        g.addColorStop(0, `rgba(${def.hiiColor[0]},${def.hiiColor[1]},${def.hiiColor[2]},0.18)`);
+        g.addColorStop(0.5, `rgba(${def.hiiColor[0]},${def.hiiColor[1]},${def.hiiColor[2]},0.06)`);
         g.addColorStop(1, 'rgba(0,0,0,0)');
         oc.fillStyle = g;
         oc.beginPath();
         oc.arc(px, py, r, 0, Math.PI * 2);
         oc.fill();
       }
-    } else {
-      // Elliptical galaxy — smooth particle cloud
-      for (let i = 0; i < 2000; i++) {
+
+      // --- 6. Bright resolved stars at the outskirts ---
+      const resolvedStars = 80 + Math.floor(Math.random() * 60);
+      for (let i = 0; i < resolvedStars; i++) {
+        const dist = def.size * (0.5 + Math.random() * 0.45);
         const angle = Math.random() * Math.PI * 2;
-        const dist = Math.random() * def.size * 0.8;
-        const px = cx + Math.cos(angle) * dist * (0.6 + Math.random() * 0.4);
-        const py = cy + Math.sin(angle) * dist * (0.4 + Math.random() * 0.3);
-        const alpha = (1 - dist / def.size) * 0.08;
-        oc.fillStyle = `rgba(${def.coreColor[0]},${def.coreColor[1]},${def.coreColor[2]},${alpha})`;
+        const px = cx + Math.cos(angle) * dist;
+        const py = cy + Math.sin(angle) * dist;
+        const brightness = 0.1 + Math.random() * 0.25;
+        const starSize = 0.3 + Math.random() * 0.7;
+        // Blue-white hot stars
+        oc.fillStyle = `rgba(200, 220, 255, ${brightness})`;
         oc.beginPath();
-        oc.arc(px, py, 0.5 + Math.random(), 0, Math.PI * 2);
+        oc.arc(px, py, starSize, 0, Math.PI * 2);
+        oc.fill();
+        // Tiny glow
+        if (Math.random() > 0.6) {
+          const sg = oc.createRadialGradient(px, py, 0, px, py, starSize * 3);
+          sg.addColorStop(0, `rgba(200, 220, 255, ${brightness * 0.3})`);
+          sg.addColorStop(1, 'rgba(0,0,0,0)');
+          oc.fillStyle = sg;
+          oc.beginPath();
+          oc.arc(px, py, starSize * 3, 0, Math.PI * 2);
+          oc.fill();
+        }
+      }
+
+    } else {
+      // --- Elliptical galaxy: de Vaucouleurs profile ---
+      for (let i = 0; i < def.diskParticles; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        // Elliptical distribution
+        const rawDist = Math.pow(Math.random(), 0.7) * def.size * 0.85;
+        const axisRatio = 0.55 + Math.random() * 0.15;
+        const px = cx + Math.cos(angle) * rawDist;
+        const py = cy + Math.sin(angle) * rawDist * axisRatio;
+        const dist = Math.sqrt((px - cx) ** 2 + ((py - cy) / axisRatio) ** 2);
+        const alpha = sersicBrightness(dist, def.size * 0.25, 4) * 0.06 * (0.4 + Math.random() * 0.6);
+        const size = 0.3 + Math.random() * 0.8;
+        // Old stellar population — warm yellows/reds
+        const warmth = sersicBrightness(dist, def.size * 0.3, 2);
+        const cr = def.coreColor[0] * warmth + def.armColor[0] * (1 - warmth);
+        const cg = def.coreColor[1] * warmth + def.armColor[1] * (1 - warmth);
+        const cb = def.coreColor[2] * warmth + def.armColor[2] * (1 - warmth);
+        oc.fillStyle = `rgba(${cr | 0},${cg | 0},${cb | 0},${alpha})`;
+        oc.beginPath();
+        oc.arc(px, py, size, 0, Math.PI * 2);
+        oc.fill();
+      }
+      // Globular cluster hints
+      for (let i = 0; i < 20; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const dist = def.size * (0.3 + Math.random() * 0.5);
+        const px = cx + Math.cos(angle) * dist;
+        const py = cy + Math.sin(angle) * dist * 0.6;
+        const r = 1 + Math.random() * 2;
+        const g = oc.createRadialGradient(px, py, 0, px, py, r);
+        g.addColorStop(0, `rgba(${def.coreColor[0]},${def.coreColor[1]},${def.coreColor[2]},0.12)`);
+        g.addColorStop(1, 'rgba(0,0,0,0)');
+        oc.fillStyle = g;
+        oc.beginPath();
+        oc.arc(px, py, r, 0, Math.PI * 2);
         oc.fill();
       }
     }
 
-    // Outer halo
-    const halo = oc.createRadialGradient(cx, cy, def.size * 0.3, cx, cy, def.size);
-    halo.addColorStop(0, `rgba(${def.coreGlow[0]},${def.coreGlow[1]},${def.coreGlow[2]},0.03)`);
-    halo.addColorStop(1, 'rgba(0,0,0,0)');
-    oc.fillStyle = halo;
-    oc.beginPath();
-    oc.arc(cx, cy, def.size, 0, Math.PI * 2);
-    oc.fill();
-
-    return offscreen;
+    return { canvas: offscreen, halfSize: canvasSize / 2 };
   }
 
   // Place galaxies and pre-render their textures
   const galaxies = GALAXY_DEFS.map(def => {
-    const texture = renderGalaxyTexture(def);
+    const { canvas: texture, halfSize } = renderGalaxyTexture(def);
     return {
       ...def,
       texture,
-      x: 80 + Math.random() * (W - 160),
-      y: 80 + Math.random() * (H - 160),
-      rotationSpeed: (Math.random() - 0.5) * 0.015,
+      halfSize,
+      x: 100 + Math.random() * (W - 200),
+      y: 100 + Math.random() * (H - 200),
+      rotationSpeed: (Math.random() - 0.5) * 0.003, // very slow rotation
       currentRotation: def.rotation,
     };
   });
@@ -247,9 +397,9 @@
       ctx.save();
       ctx.translate(g.x, g.y);
       ctx.rotate(g.currentRotation);
-      ctx.scale(1, 1 - g.tilt * 0.7); // tilt by squashing vertically
+      ctx.scale(1, 1 - g.tilt * 0.75);
       ctx.globalAlpha = g.opacity;
-      ctx.drawImage(g.texture, -g.size, -g.size);
+      ctx.drawImage(g.texture, -g.halfSize, -g.halfSize);
       ctx.restore();
     }
     ctx.globalAlpha = 1;
