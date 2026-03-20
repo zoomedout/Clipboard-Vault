@@ -15,24 +15,6 @@
   let staticCanvas = document.createElement('canvas');
   let staticCtx = staticCanvas.getContext('2d');
 
-  // Milky Way band parameters (horizontal, slightly tilted)
-  const MW_ANGLE = -0.12; // slight tilt in radians
-  const MW_CENTER_Y = 0.42; // vertical center as fraction of height
-  const MW_WIDTH = 0.22; // width as fraction of height
-
-  // Check if point is inside milky way band (returns 0-1 density)
-  function milkyWayDensity(x, y) {
-    // Rotate point to align with band
-    const cx = W / 2, cy = H * MW_CENTER_Y;
-    const dx = x - cx, dy = y - cy;
-    const rotY = -dx * Math.sin(MW_ANGLE) + dy * Math.cos(MW_ANGLE);
-    const bandHalf = H * MW_WIDTH / 2;
-    const dist = Math.abs(rotY) / bandHalf;
-    if (dist > 1.5) return 0;
-    // Gaussian-like falloff
-    return Math.exp(-dist * dist * 2.5);
-  }
-
   function renderStaticLayer() {
     staticCanvas.width = W;
     staticCanvas.height = H;
@@ -41,61 +23,13 @@
     staticCtx.fillStyle = '#000000';
     staticCtx.fillRect(0, 0, W, H);
 
-    // --- Layer 1: Milky Way diffuse glow ---
-    // Multiple overlapping soft blobs to create the cloudy band
-    const mwBlobs = 60;
-    for (let i = 0; i < mwBlobs; i++) {
-      const bx = Math.random() * W;
-      const by = H * MW_CENTER_Y + (Math.random() - 0.5) * H * MW_WIDTH * 0.8;
-      // Rotate position with band angle
-      const rx = bx + (by - H * MW_CENTER_Y) * Math.sin(MW_ANGLE) * 0.5;
-      const ry = by;
-      const radius = 60 + Math.random() * 180;
-      const alpha = 0.008 + Math.random() * 0.015;
-      const g = staticCtx.createRadialGradient(rx, ry, 0, rx, ry, radius);
-      // Slightly warm white
-      g.addColorStop(0, `rgba(220, 215, 210, ${alpha})`);
-      g.addColorStop(0.5, `rgba(200, 198, 195, ${alpha * 0.4})`);
-      g.addColorStop(1, 'rgba(0,0,0,0)');
-      staticCtx.fillStyle = g;
-      staticCtx.beginPath();
-      staticCtx.arc(rx, ry, radius, 0, Math.PI * 2);
-      staticCtx.fill();
-    }
-
-    // --- Layer 2: Dark dust lanes within Milky Way ---
-    const dustLanes = 25;
-    for (let i = 0; i < dustLanes; i++) {
-      const dx = Math.random() * W;
-      const dy = H * MW_CENTER_Y + (Math.random() - 0.5) * H * MW_WIDTH * 0.5;
-      const radius = 30 + Math.random() * 100;
-      const alpha = 0.03 + Math.random() * 0.06;
-      const g = staticCtx.createRadialGradient(dx, dy, 0, dx, dy, radius);
-      g.addColorStop(0, `rgba(0, 0, 0, ${alpha})`);
-      g.addColorStop(1, 'rgba(0,0,0,0)');
-      staticCtx.fillStyle = g;
-      staticCtx.beginPath();
-      staticCtx.arc(dx, dy, radius, 0, Math.PI * 2);
-      staticCtx.fill();
-    }
-
-    // --- Layer 3: Stars ---
-    // Distribution: 80% faint, 15% medium, 5% bright
+    // --- Stars ---
     const TOTAL_STARS = 16000;
     stars.length = 0;
 
     for (let i = 0; i < TOTAL_STARS; i++) {
       let x = Math.random() * W;
       let y = Math.random() * H;
-
-      // Density weighting — stars cluster in Milky Way
-      const mwD = milkyWayDensity(x, y);
-      // 40% chance to redistribute into MW band
-      if (Math.random() > 0.4 + mwD * 0.5) {
-        // Re-roll closer to Milky Way
-        y = H * MW_CENTER_Y + (Math.random() - 0.5) * H * MW_WIDTH * 1.2;
-        x = Math.random() * W;
-      }
 
       const roll = Math.random();
       let radius, alpha;
@@ -127,8 +61,6 @@
         alpha = 0.85 + Math.random() * 0.15;
       }
 
-      // Boost brightness inside Milky Way
-      alpha = Math.min(1, alpha + mwD * 0.15);
 
       // Draw sharp dot (no gradient for most)
       staticCtx.fillStyle = `rgba(${r},${g},${b},${alpha})`;
