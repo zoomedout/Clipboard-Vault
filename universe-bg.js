@@ -24,7 +24,7 @@
     staticCtx.fillRect(0, 0, W, H);
 
     // --- Stars ---
-    const TOTAL_STARS = 8000;
+    const TOTAL_STARS = 4000;
     stars.length = 0;
 
     for (let i = 0; i < TOTAL_STARS; i++) {
