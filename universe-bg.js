@@ -187,12 +187,13 @@
   function maybeSpawnShootingStar(now) {
     if (now - lastSpawnTime > SPAWN_INTERVAL && shootingStars.length < 2) {
       lastSpawnTime = now;
-      const angle = -Math.PI / 8 + Math.random() * -Math.PI / 5;
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 1.5 + Math.random() * 1.5;
       shootingStars.push({
         x: Math.random() * W,
-        y: Math.random() * H * 0.6,
-        vx: Math.cos(angle) * (1.5 + Math.random() * 1.5),
-        vy: -Math.sin(angle) * (1.5 + Math.random() * 1.5),
+        y: Math.random() * H,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
         life: 1,
         decay: 0.004 + Math.random() * 0.004,
         len: 50 + Math.random() * 70,
