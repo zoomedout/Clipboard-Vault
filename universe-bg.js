@@ -24,7 +24,7 @@
     staticCtx.fillRect(0, 0, W, H);
 
     // --- Stars ---
-    const TOTAL_STARS = 4000;
+    const TOTAL_STARS = 2000;
     stars.length = 0;
 
     for (let i = 0; i < TOTAL_STARS; i++) {
@@ -179,19 +179,23 @@
     ctx.fill();
   }
 
-  // --- Shooting stars ---
+  // --- Shooting stars (continuous, slow, staggered) ---
   const shootingStars = [];
-  function maybeSpawnShootingStar() {
-    if (Math.random() < 0.012 && shootingStars.length < 3) {
-      const angle = -Math.PI / 6 + Math.random() * -Math.PI / 4;
+  let lastSpawnTime = 0;
+  const SPAWN_INTERVAL = 2500; // ms between spawns
+
+  function maybeSpawnShootingStar(now) {
+    if (now - lastSpawnTime > SPAWN_INTERVAL && shootingStars.length < 2) {
+      lastSpawnTime = now;
+      const angle = -Math.PI / 8 + Math.random() * -Math.PI / 5;
       shootingStars.push({
         x: Math.random() * W,
-        y: Math.random() * H * 0.5,
-        vx: Math.cos(angle) * (5 + Math.random() * 4),
-        vy: -Math.sin(angle) * (5 + Math.random() * 4),
+        y: Math.random() * H * 0.6,
+        vx: Math.cos(angle) * (1.5 + Math.random() * 1.5),
+        vy: -Math.sin(angle) * (1.5 + Math.random() * 1.5),
         life: 1,
-        decay: 0.018 + Math.random() * 0.012,
-        len: 30 + Math.random() * 50,
+        decay: 0.004 + Math.random() * 0.004,
+        len: 50 + Math.random() * 70,
       });
     }
   }
@@ -222,12 +226,12 @@
   // Only redraws dynamic elements (mouse, shooting stars) over static bg
   let needsDynamic = false;
 
-  function frame() {
+  function frame(ts) {
     // Draw static starfield
     ctx.drawImage(staticCanvas, 0, 0);
 
     // Dynamic overlays
-    maybeSpawnShootingStar();
+    maybeSpawnShootingStar(ts || 0);
     updateShootingStars();
     drawConnections();
 
