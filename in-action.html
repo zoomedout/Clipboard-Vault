@@ -9,11 +9,11 @@
     content="Real-world scenarios where Clipboard Vault makes your life easier. Security, file transfer, notes, and more.">
   <style>
     :root {
-      --bg: #ffffff;
-      --bg-alt: #f5f5f7;
-      --text: #1d1d1f;
-      --text-secondary: #6e6e73;
-      --text-tertiary: #86868b;
+      --bg: #000000;
+      --bg-alt: #0a0a0a;
+      --text: #e8e8ed;
+      --text-secondary: #c8c8cd;
+      --text-tertiary: #8e8e93;
       --accent: #0071e3;
       --accent-hover: #0077ed;
       --green: #34c759;
@@ -22,7 +22,8 @@
       --teal: #5ac8fa;
       --red: #ff3b30;
       --pink: #ff2d55;
-      --border: #d2d2d7;
+      --border: rgba(255,255,255,0.1);
+      --card: #0a0a0a;
       --font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
       --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
     }
@@ -31,24 +32,24 @@
     body { font-family: var(--font); color: var(--text); background: var(--bg); -webkit-font-smoothing: antialiased; }
 
     /* Nav */
-    nav { position: sticky; top: 0; z-index: 100; background: rgba(255,255,255,0.85); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); }
+    nav { position: sticky; top: 0; z-index: 100; background: rgba(0,0,0,0.72); backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px); border-bottom: 1px solid rgba(255,255,255,0.06); }
     .nav-inner { max-width: 1024px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 14px 24px; }
-    .nav-brand { font-family: var(--font-display); font-size: 18px; font-weight: 700; color: var(--text); text-decoration: none; letter-spacing: -0.3px; }
+    .nav-brand { font-family: var(--font-display); font-size: 18px; font-weight: 700; color: #e8e8ed; text-decoration: none; letter-spacing: -0.3px; }
     .nav-links { display: flex; gap: 28px; align-items: center; }
-    .nav-links a { font-size: 13px; color: var(--text-secondary); text-decoration: none; font-weight: 500; transition: color 0.2s; }
-    .nav-links a:hover { color: var(--text); }
-    .nav-links a.active { color: var(--text); font-weight: 600; }
+    .nav-links a { font-size: 13px; color: #a1a1a6; text-decoration: none; font-weight: 500; transition: color 0.2s; }
+    .nav-links a:hover { color: #e8e8ed; }
+    .nav-links a.active { color: #e8e8ed; font-weight: 600; }
     .nav-cta { background: var(--accent) !important; color: #fff !important; padding: 7px 16px !important; border-radius: 980px !important; font-weight: 500 !important; transition: background 0.2s !important; }
     .nav-cta:hover { background: var(--accent-hover) !important; }
 
     /* Hero */
-    .hero { text-align: center; padding: 80px 24px 20px; }
+    .hero { text-align: center; padding: 80px 24px 20px; position: relative; z-index: 1; }
     .hero h1 { font-family: var(--font-display); font-size: 48px; font-weight: 700; letter-spacing: -1.5px; line-height: 1.1; }
     .hero .gradient { background: linear-gradient(135deg, var(--accent), var(--purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
     .hero-sub { font-size: 18px; color: var(--text-secondary); max-width: 580px; margin: 16px auto 0; line-height: 1.5; }
 
     /* Scenarios */
-    .scenarios { max-width: 1024px; margin: 0 auto; padding: 40px 24px 80px; }
+    .scenarios { max-width: 1024px; margin: 0 auto; padding: 40px 24px 80px; position: relative; z-index: 1; }
 
     .scenario {
       display: grid;
@@ -56,7 +57,7 @@
       gap: 48px;
       align-items: center;
       padding: 64px 0;
-      border-bottom: 1px solid #f0f0f0;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
     }
     .scenario:last-child { border-bottom: none; }
     .scenario.reverse { direction: rtl; }
@@ -183,8 +184,8 @@
       margin-top: 16px;
     }
     .pill {
-      background: var(--bg-alt);
-      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
       border-radius: 980px;
       padding: 6px 14px;
       font-size: 12px;
@@ -219,7 +220,9 @@
     .cta-section {
       text-align: center;
       padding: 60px 24px 80px;
-      background: var(--bg-alt);
+      background: rgba(0,0,0,0.4);
+      position: relative;
+      z-index: 1;
     }
     .cta-section h2 { font-family: var(--font-display); font-size: 32px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 8px; }
     .cta-section p { color: var(--text-secondary); margin-bottom: 24px; font-size: 16px; }
@@ -229,7 +232,7 @@
     .cta-secondary:hover { text-decoration: underline; }
 
     /* Footer */
-    footer { border-top: 1px solid var(--border); padding: 40px 24px; text-align: center; }
+    footer { background: #000000; border-top: 1px solid rgba(255,255,255,0.1); padding: 40px 24px; text-align: center; position: relative; z-index: 1; }
     .footer-inner { max-width: 1024px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
     .footer-copy { font-size: 13px; color: var(--text-tertiary); }
     .footer-links { display: flex; gap: 20px; }
@@ -248,9 +251,11 @@
       .stat-row { justify-content: center; }
     }
   </style>
+  <link rel="stylesheet" href="universe-bg.css">
 </head>
 
 <body>
+  <canvas id="universe"></canvas>
   <!-- Nav -->
   <nav>
     <div class="nav-inner">
@@ -304,7 +309,7 @@
     <!-- 2. Seamless Transfer -->
     <div class="scenario reverse">
       <div class="scenario-text">
-        <span class="scenario-tag" style="background: #eef4ff; color: var(--accent);">File Transfer</span>
+        <span class="scenario-tag" style="background: rgba(0,113,227,0.15); color: var(--accent);">File Transfer</span>
         <h2>Remember emailing files to yourself?</h2>
         <p>You're editing a document on your Mac and need it on your phone. With AirDrop, you open the share sheet, wait for your phone to appear, accept the transfer, find the file. With iCloud Drive, you open Finder, navigate to the folder, then open Files on your phone and wait for it to download.</p>
         <p>With Clipboard Vault: you copy. That's it. Open the app on your phone &mdash; it's already there. Photos from your phone show up on your Mac the same way. No share sheets, no "waiting for device," no cables, no emailing files to yourself.</p>
@@ -340,7 +345,7 @@
     <!-- 3. Notes -->
     <div class="scenario">
       <div class="scenario-text">
-        <span class="scenario-tag" style="background: #fff5e6; color: var(--orange);">Notes</span>
+        <span class="scenario-tag" style="background: rgba(255,149,0,0.15); color: var(--orange);">Notes</span>
         <h2>Remember why you copied it</h2>
         <p>You copied a phone number two days ago. Was it the plumber? The landlord? Your kid's school? You copied an address &mdash; but was that the pickup location or the drop-off?</p>
         <p>Attach a note to any clip: "Mom's new Wi-Fi password," "Booking ref for Friday flight," "Client's Figma link &mdash; expires Dec 1." Notes are encrypted, synced across devices, and fully searchable.</p>
@@ -361,7 +366,7 @@
     <!-- 4. Video -->
     <div class="scenario reverse">
       <div class="scenario-text">
-        <span class="scenario-tag" style="background: #f5e6ff; color: var(--purple);">Video</span>
+        <span class="scenario-tag" style="background: rgba(175,82,222,0.15); color: var(--purple);">Video</span>
         <h2>Share videos without the hassle</h2>
         <p>Select videos in Photos, tap Share, pick Clipboard Vault. That's it. Thumbnails are generated automatically, and you can preview any video with a tap.</p>
         <p>Videos are stream-encrypted in 1 MB chunks &mdash; your iPhone won't run out of memory, even with long videos. Multi-select works too.</p>
@@ -388,7 +393,7 @@
     <!-- 5. Search -->
     <div class="scenario">
       <div class="scenario-text">
-        <span class="scenario-tag" style="background: #e6fff0; color: #1a8a4a;">Search</span>
+        <span class="scenario-tag" style="background: rgba(52,199,89,0.15); color: var(--green);">Search</span>
         <h2>"I copied it yesterday... where did it go?"</h2>
         <p>That tracking number from an Amazon email. The restaurant your friend texted you. That error message you were going to Google later. You copied it, then you copied something else, and it was gone forever.</p>
         <p>Not anymore. Search your entire clipboard history instantly. Type a few characters and find that URL from three days ago, that address from last week, that confirmation code from this morning.</p>
@@ -411,7 +416,7 @@
     <!-- 6. One Clipboard Slot -->
     <div class="scenario reverse">
       <div class="scenario-text">
-        <span class="scenario-tag" style="background: #fff0f0; color: #cc3333;">Everyday</span>
+        <span class="scenario-tag" style="background: rgba(204,51,51,0.15); color: #ff6b6b;">Everyday</span>
         <h2>You only get one clipboard. Until now.</h2>
         <p>You're filling out a form. You copy your address, paste it. Now you need your phone number &mdash; you copy that, paste it. But wait, now you need the address again for the next field. So you switch back to Contacts, find it, copy it again. Then you need an order number from an email. Copy. Now the phone number is gone.</p>
         <p>With Clipboard Vault, everything you copy stays in your history. Need that address again? It's right there. The phone number? Still there. The order number from 10 minutes ago? There too. No more tab-switching, no more re-copying, no more losing what you just had.</p>
@@ -437,7 +442,7 @@
     <!-- 7. Developer -->
     <div class="scenario reverse">
       <div class="scenario-text">
-        <span class="scenario-tag" style="background: #f0f0f0; color: #333;">Developer</span>
+        <span class="scenario-tag" style="background: rgba(255,255,255,0.08); color: #c8c8cd;">Developer</span>
         <h2>You know that stack trace you copied and then lost?</h2>
         <p>You're debugging a crash. You copy the error, switch to the browser to search it, copy the fix from Stack Overflow, go back to your editor &mdash; and realize you lost the original error. Sound familiar?</p>
         <p>Clipboard Vault keeps everything. Pin your go-to snippets &mdash; SSH commands, regex patterns, boilerplate code &mdash; so they're always one hotkey away. Cmd+Shift+V pulls up your history without leaving your editor.</p>
@@ -472,7 +477,7 @@
     <!-- 7. Privacy -->
     <div class="scenario">
       <div class="scenario-text">
-        <span class="scenario-tag" style="background: #eef0ff; color: #5856d6;">Privacy</span>
+        <span class="scenario-tag" style="background: rgba(88,86,214,0.15); color: #7c7cff;">Privacy</span>
         <h2>No servers. No accounts. No tracking.</h2>
         <p>Your clipboard data never touches our servers &mdash; because we don't have any. No analytics. No Mixpanel. No Sentry. No telemetry of any kind.</p>
         <p>When you sync, it goes through your own iCloud account with end-to-end encryption. We literally cannot see your data even if we wanted to.</p>
@@ -493,7 +498,7 @@
     <!-- 8. Share Extension -->
     <div class="scenario reverse">
       <div class="scenario-text">
-        <span class="scenario-tag" style="background: #ffe6eb; color: var(--red);">iOS Share</span>
+        <span class="scenario-tag" style="background: rgba(255,59,48,0.15); color: var(--red);">iOS Share</span>
         <h2>Your friend just texted you 8 photos from the trip</h2>
         <p>You want them on your Mac for editing. Normally you'd save them to Photos, AirDrop them, wait for the transfer, find them in Downloads. Or upload to iCloud Drive, wait for sync, navigate to the folder on your Mac.</p>
         <p>With Clipboard Vault: select all 8, tap Share, pick Clipboard Vault. They're on your Mac in seconds &mdash; encrypted, organized, and ready to use. Works with photos, videos, documents, links &mdash; up to 10 items at once.</p>
@@ -540,6 +545,7 @@
       </div>
     </div>
   </footer>
+  <script src="universe-bg.js"></script>
 </body>
 
 </html>
