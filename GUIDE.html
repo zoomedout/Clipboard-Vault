@@ -9,20 +9,20 @@
     content="Post-quantum encrypted clipboard manager. Synced across all your Apple devices. Text, images, and files — protected with next-gen encryption.">
   <style>
     :root {
-      --bg: #ffffff;
-      --bg-alt: #f5f5f7;
+      --bg: #05050f;
+      --bg-alt: rgba(15, 15, 30, 0.8);
       --bg-dark: #000000;
-      --text: #1d1d1f;
-      --text-secondary: #6e6e73;
-      --text-tertiary: #86868b;
+      --text: #e8e8ed;
+      --text-secondary: #a1a1a6;
+      --text-tertiary: #6e6e73;
       --accent: #0071e3;
       --accent-hover: #0077ed;
       --green: #34c759;
       --purple: #af52de;
       --orange: #ff9500;
       --teal: #5ac8fa;
-      --border: #d2d2d7;
-      --card: #ffffff;
+      --border: rgba(255, 255, 255, 0.1);
+      --card: rgba(20, 20, 40, 0.7);
       --font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
       --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
     }
@@ -45,6 +45,16 @@
       overflow-x: hidden;
     }
 
+    #universe {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+    }
+
     /* ── Nav ── */
     nav {
       position: fixed;
@@ -52,10 +62,10 @@
       left: 0;
       right: 0;
       height: 52px;
-      background: rgba(255, 255, 255, 0.72);
+      background: rgba(10, 10, 20, 0.72);
       backdrop-filter: saturate(180%) blur(20px);
       -webkit-backdrop-filter: saturate(180%) blur(20px);
-      border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
       z-index: 100;
       display: flex;
       align-items: center;
@@ -75,7 +85,7 @@
       font-family: var(--font-display);
       font-size: 18px;
       font-weight: 700;
-      color: var(--text);
+      color: #e8e8ed;
       text-decoration: none;
       letter-spacing: -0.3px;
     }
@@ -88,14 +98,14 @@
 
     .nav-links a {
       font-size: 13px;
-      color: var(--text-secondary);
+      color: #a1a1a6;
       text-decoration: none;
       font-weight: 500;
       transition: color 0.2s;
     }
 
     .nav-links a:hover {
-      color: var(--text);
+      color: #e8e8ed;
     }
 
     .nav-cta {
@@ -117,6 +127,7 @@
       text-align: center;
       position: relative;
       overflow: hidden;
+      z-index: 1;
     }
 
     .hero::before {
@@ -126,9 +137,9 @@
       left: 0;
       right: 0;
       bottom: 0;
-      background: radial-gradient(ellipse 80% 60% at 50% 20%, rgba(0, 113, 227, 0.08) 0%, transparent 70%),
-        radial-gradient(ellipse 60% 50% at 30% 40%, rgba(175, 82, 222, 0.05) 0%, transparent 60%),
-        radial-gradient(ellipse 60% 50% at 70% 40%, rgba(52, 199, 89, 0.05) 0%, transparent 60%);
+      background: radial-gradient(ellipse 80% 60% at 50% 20%, rgba(0, 113, 227, 0.03) 0%, transparent 70%),
+        radial-gradient(ellipse 60% 50% at 30% 40%, rgba(175, 82, 222, 0.02) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 70% 40%, rgba(52, 199, 89, 0.02) 0%, transparent 60%);
       pointer-events: none;
     }
 
@@ -136,8 +147,8 @@
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      background: var(--bg-alt);
-      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: 980px;
       padding: 6px 16px;
       font-size: 13px;
@@ -257,8 +268,8 @@
     }
 
     .app-window {
-      background: var(--card);
-      border: 1px solid var(--border);
+      background: rgba(20, 20, 40, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: 12px;
       overflow: hidden;
       box-shadow: 0 20px 80px rgba(0, 0, 0, 0.12), 0 4px 20px rgba(0, 0, 0, 0.06);
@@ -266,8 +277,8 @@
 
     .app-titlebar {
       height: 40px;
-      background: var(--bg-alt);
-      border-bottom: 1px solid var(--border);
+      background: rgba(30, 30, 50, 0.8);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
       display: flex;
       align-items: center;
       padding: 0 16px;
@@ -299,7 +310,7 @@
 
     .app-sidebar {
       width: 280px;
-      border-right: 1px solid var(--border);
+      border-right: 1px solid rgba(255, 255, 255, 0.06);
       padding: 12px;
       overflow: hidden;
     }
@@ -307,8 +318,8 @@
     .app-search {
       width: 100%;
       height: 32px;
-      background: var(--bg-alt);
-      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
       border-radius: 8px;
       margin-bottom: 12px;
       padding: 0 10px;
@@ -407,7 +418,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      background: var(--bg-alt);
+      background: rgba(15, 15, 30, 0.6);
     }
 
     .detail-content {
@@ -451,8 +462,8 @@
       border-radius: 16px;
       overflow: hidden;
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12), 0 4px 20px rgba(0, 0, 0, 0.06);
-      background: #fff;
-      border: 1px solid var(--border);
+      background: #1a1a1a;
+      border: 1px solid rgba(255, 255, 255, 0.08);
       flex-shrink: 0;
     }
 
@@ -500,7 +511,9 @@
     /* ── Platform Cards (Apple-style) ── */
     .platform-section {
       padding: 80px 24px;
-      background: var(--bg);
+      background: transparent;
+      position: relative;
+      z-index: 1;
     }
 
     .platform-header {
@@ -517,7 +530,7 @@
     }
 
     .platform-header h2 span {
-      color: var(--text-secondary);
+      color: #6e6e73;
     }
 
     .platform-cards {
@@ -529,7 +542,8 @@
     }
 
     .platform-card {
-      background: var(--bg-alt);
+      background: rgba(20, 20, 40, 0.6);
+      color: #f5f5f7;
       border-radius: 20px;
       padding: 40px 32px 0;
       overflow: hidden;
@@ -572,7 +586,7 @@
 
     .pc-subtitle {
       font-size: 15px;
-      color: var(--text-secondary);
+      color: #a1a1a6;
       line-height: 1.5;
       margin-bottom: 16px;
     }
@@ -610,8 +624,8 @@
     }
 
     .platform-card:not(.dark-card) .pc-feature-pill {
-      background: rgba(0, 0, 0, 0.06);
-      color: var(--text-secondary);
+      background: rgba(255, 255, 255, 0.1);
+      color: rgba(255, 255, 255, 0.7);
     }
 
     .pc-footer-text {
@@ -715,13 +729,17 @@
       padding: 120px 24px;
       max-width: 1024px;
       margin: 0 auto;
+      position: relative;
+      z-index: 1;
     }
 
     .section-dark {
-      background: var(--bg-dark);
+      background: rgba(0, 0, 0, 0.4);
       color: #f5f5f7;
       max-width: 100%;
       padding: 120px 24px;
+      position: relative;
+      z-index: 1;
     }
 
     .section-dark .inner {
@@ -730,9 +748,11 @@
     }
 
     .section-alt {
-      background: var(--bg-alt);
+      background: transparent;
       max-width: 100%;
       padding: 120px 24px;
+      position: relative;
+      z-index: 1;
     }
 
     .section-alt .inner {
@@ -781,8 +801,10 @@
     }
 
     .feature-card {
-      background: var(--card);
-      border: 1px solid var(--border);
+      background: rgba(20, 20, 40, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
       border-radius: 20px;
       padding: 32px;
       transition: transform 0.3s, box-shadow 0.3s;
@@ -790,7 +812,7 @@
 
     .feature-card:hover {
       transform: translateY(-4px);
-      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
     }
 
     .feature-icon {
@@ -842,7 +864,7 @@
 
     .feature-card p {
       font-size: 14px;
-      color: var(--text-secondary);
+      color: #a1a1a6;
       line-height: 1.6;
     }
 
@@ -994,8 +1016,8 @@
     }
 
     .shortcut-card {
-      background: var(--card);
-      border: 1px solid var(--border);
+      background: rgba(20, 20, 40, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.08);
       border-radius: 12px;
       padding: 20px 24px;
       display: flex;
@@ -1016,17 +1038,20 @@
     kbd {
       font-family: 'SF Mono', Menlo, monospace;
       font-size: 12px;
-      background: var(--bg-alt);
-      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
       border-radius: 6px;
       padding: 4px 8px;
       font-weight: 600;
+      color: #e8e8ed;
     }
 
     /* ── CTA section ── */
     .cta-section {
       text-align: center;
       padding: 120px 24px;
+      position: relative;
+      z-index: 1;
     }
 
     .cta-section h2 {
@@ -1040,15 +1065,17 @@
 
     .cta-section p {
       font-size: 19px;
-      color: var(--text-secondary);
+      color: #a1a1a6;
       margin-bottom: 40px;
     }
 
     /* ── Footer ── */
     footer {
-      border-top: 1px solid var(--border);
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
       padding: 40px 24px;
       text-align: center;
+      position: relative;
+      z-index: 1;
     }
 
     .footer-inner {
@@ -1170,6 +1197,8 @@
 </head>
 
 <body>
+
+  <canvas id="universe"></canvas>
 
   <!-- Nav -->
   <nav>
@@ -1602,7 +1631,7 @@
       right: 24px;
       width: 380px;
       height: 520px;
-      background: var(--bg);
+      background: rgba(10, 10, 25, 0.95);
       border: 1px solid var(--border);
       border-radius: 16px;
       box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15);
@@ -1663,7 +1692,7 @@
     }
 
     .chat-msg.system {
-      background: var(--bg-alt);
+      background: rgba(255, 255, 255, 0.05);
       color: var(--text-secondary);
       font-size: 13px;
       text-align: center;
@@ -1680,8 +1709,8 @@
 
     .chat-msg.assistant {
       align-self: flex-start;
-      background: var(--bg-alt);
-      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
       color: var(--text);
       border-bottom-left-radius: 4px;
     }
@@ -1796,7 +1825,7 @@
       display: flex;
       gap: 6px;
       align-items: flex-end;
-      background: var(--bg);
+      background: rgba(10, 10, 25, 0.95);
     }
 
     .chat-input {
@@ -2087,6 +2116,531 @@
       }
     }
   </style>
+
+  <!-- ═══════════════════════════════════════════════════════
+     Universe Background
+     ═══════════════════════════════════════════════════════ -->
+  <script>
+(() => {
+  const canvas = document.getElementById('universe');
+  const ctx = canvas.getContext('2d');
+
+  let W, H;
+  const resize = () => { W = canvas.width = innerWidth; H = canvas.height = innerHeight; };
+  resize();
+  addEventListener('resize', resize);
+
+  // --- Stars ---
+  const STAR_COUNT = 600;
+  const stars = [];
+
+  class Star {
+    constructor() { this.reset(); }
+    reset() {
+      this.x = Math.random() * W;
+      this.y = Math.random() * H;
+      this.z = Math.random();
+      this.baseRadius = 0.4 + Math.random() * 1.8;
+      this.radius = this.baseRadius * (0.5 + this.z * 0.5);
+      this.twinkleSpeed = 0.5 + Math.random() * 2;
+      this.twinkleOffset = Math.random() * Math.PI * 2;
+      const tints = [[255,255,255],[200,220,255],[255,240,200],[255,200,180],[180,200,255]];
+      this.tint = tints[Math.floor(Math.random() * tints.length)];
+      this.vx = (Math.random() - 0.5) * 0.08;
+      this.vy = (Math.random() - 0.5) * 0.04;
+    }
+    update(t) {
+      this.x += this.vx;
+      this.y += this.vy;
+      if (this.x < -10) this.x = W + 10;
+      if (this.x > W + 10) this.x = -10;
+      if (this.y < -10) this.y = H + 10;
+      if (this.y > H + 10) this.y = -10;
+      this.brightness = 0.4 + 0.6 * ((Math.sin(t * this.twinkleSpeed + this.twinkleOffset) + 1) / 2);
+    }
+    draw() {
+      const r = this.radius;
+      const b = this.brightness;
+      const [cr, cg, cb] = this.tint;
+      const grad = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, r * 4);
+      grad.addColorStop(0, `rgba(${cr},${cg},${cb},${b * 0.7})`);
+      grad.addColorStop(0.3, `rgba(${cr},${cg},${cb},${b * 0.15})`);
+      grad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, r * 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = `rgba(${cr},${cg},${cb},${b})`;
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  for (let i = 0; i < STAR_COUNT; i++) stars.push(new Star());
+
+  // --- High-fidelity distant galaxies (pre-rendered to offscreen canvases) ---
+  const GALAXY_DEFS = [
+    // Grand-design spiral — warm Andromeda-like
+    { size: 160, tilt: 0.25, rotation: 0.4, arms: 2, armTightness: 0.22,
+      coreColor: [255, 235, 190], armColor: [180, 200, 255], dustColor: [90, 60, 30],
+      hiiColor: [255, 100, 120], coreGlow: [255, 220, 160], opacity: 0.4,
+      bulgeRatio: 0.18, diskParticles: 12000, armWidth: 0.15 },
+    // Barred spiral — blue-white arms
+    { size: 110, tilt: 0.35, rotation: -0.7, arms: 2, armTightness: 0.18,
+      coreColor: [200, 210, 255], armColor: [140, 180, 255], dustColor: [40, 50, 100],
+      hiiColor: [200, 130, 255], coreGlow: [170, 190, 255], opacity: 0.3,
+      bulgeRatio: 0.25, diskParticles: 10000, armWidth: 0.12, barred: true },
+    // Elliptical galaxy — old red population
+    { size: 70, tilt: 0.45, rotation: 0, arms: 0, armTightness: 0,
+      coreColor: [255, 200, 160], armColor: [220, 160, 120], dustColor: [160, 100, 70],
+      hiiColor: [255, 180, 150], coreGlow: [255, 190, 140], opacity: 0.22,
+      bulgeRatio: 0.6, diskParticles: 6000, armWidth: 0 },
+    // Edge-on spiral with dust lane
+    { size: 80, tilt: 0.88, rotation: 1.2, arms: 2, armTightness: 0.28,
+      coreColor: [240, 225, 200], armColor: [170, 180, 200], dustColor: [60, 45, 30],
+      hiiColor: [255, 120, 140], coreGlow: [250, 235, 210], opacity: 0.25,
+      bulgeRatio: 0.15, diskParticles: 8000, armWidth: 0.1 },
+    // Faint distant spiral — violet/blue
+    { size: 180, tilt: 0.15, rotation: 2.0, arms: 3, armTightness: 0.15,
+      coreColor: [210, 185, 245], armColor: [150, 140, 230], dustColor: [60, 40, 110],
+      hiiColor: [220, 140, 255], coreGlow: [190, 165, 255], opacity: 0.18,
+      bulgeRatio: 0.12, diskParticles: 14000, armWidth: 0.18 },
+  ];
+
+  // Sérsic-like luminosity profile for realistic brightness falloff
+  function sersicBrightness(r, re, n) {
+    const bn = 1.9992 * n - 0.3271;
+    return Math.exp(-bn * (Math.pow(r / re, 1 / n) - 1));
+  }
+
+  // Logarithmic spiral: r = a * e^(b*theta)
+  function logSpiralAngle(dist, tightness) {
+    return Math.log(dist + 1) / tightness;
+  }
+
+  function renderGalaxyTexture(def) {
+    const pad = 1.4; // extra room for halo
+    const canvasSize = Math.ceil(def.size * 2 * pad);
+    const offscreen = document.createElement('canvas');
+    offscreen.width = canvasSize;
+    offscreen.height = canvasSize;
+    const oc = offscreen.getContext('2d');
+    const cx = canvasSize / 2, cy = canvasSize / 2;
+
+    // --- 1. Diffuse halo (dark matter / old stars) ---
+    for (let layer = 0; layer < 4; layer++) {
+      const r = def.size * (0.6 + layer * 0.25);
+      const alpha = 0.012 - layer * 0.002;
+      const g = oc.createRadialGradient(cx, cy, 0, cx, cy, r);
+      g.addColorStop(0, `rgba(${def.coreGlow[0]},${def.coreGlow[1]},${def.coreGlow[2]},${alpha})`);
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      oc.fillStyle = g;
+      oc.beginPath();
+      oc.arc(cx, cy, r, 0, Math.PI * 2);
+      oc.fill();
+    }
+
+    // --- 2. Bulge with Sérsic profile ---
+    const bulgeR = def.size * def.bulgeRatio;
+    const bulgeSteps = 30;
+    for (let i = bulgeSteps; i > 0; i--) {
+      const frac = i / bulgeSteps;
+      const r = bulgeR * frac;
+      const brightness = sersicBrightness(r, bulgeR * 0.4, 4) * 0.7;
+      const g = oc.createRadialGradient(cx, cy, 0, cx, cy, r);
+      // Warm yellow-white core fading to orange at edges
+      const warmth = frac;
+      const cr = Math.min(255, def.coreGlow[0] + (1 - warmth) * 20);
+      const cg = Math.min(255, def.coreGlow[1] - (1 - warmth) * 20);
+      const cb = Math.min(255, def.coreGlow[2] - (1 - warmth) * 40);
+      g.addColorStop(0, `rgba(${cr | 0},${cg | 0},${cb | 0},${brightness})`);
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      oc.fillStyle = g;
+      oc.beginPath();
+      oc.arc(cx, cy, r, 0, Math.PI * 2);
+      oc.fill();
+    }
+
+    // --- 3. Disk stars (spiral or elliptical) ---
+    if (def.arms > 0) {
+      const isBarred = def.barred || false;
+
+      // Pass 1: diffuse disk population (inter-arm stars)
+      const diskCount = def.diskParticles * 0.3;
+      for (let i = 0; i < diskCount; i++) {
+        const dist = Math.pow(Math.random(), 0.6) * def.size * 0.85;
+        const angle = Math.random() * Math.PI * 2;
+        const px = cx + Math.cos(angle) * dist;
+        const py = cy + Math.sin(angle) * dist;
+        const distRatio = dist / def.size;
+        const alpha = sersicBrightness(dist, def.size * 0.35, 1) * 0.04 * (0.5 + Math.random() * 0.5);
+        const size = 0.3 + Math.random() * 0.8;
+        // Old reddish population between arms
+        const r = def.coreColor[0] - 20;
+        const g = def.coreColor[1] - 30;
+        const b = def.coreColor[2] - 40;
+        oc.fillStyle = `rgba(${Math.max(0, r)},${Math.max(0, g)},${Math.max(0, b)},${alpha})`;
+        oc.beginPath();
+        oc.arc(px, py, size, 0, Math.PI * 2);
+        oc.fill();
+      }
+
+      // Pass 2: logarithmic spiral arms
+      const armParticles = def.diskParticles * 0.7;
+      for (let i = 0; i < armParticles; i++) {
+        const armIndex = i % def.arms;
+        const armOffset = (armIndex / def.arms) * Math.PI * 2;
+        const dist = Math.pow(Math.random(), 0.5) * def.size * 0.92;
+        const spiralAngle = armOffset + logSpiralAngle(dist, def.armTightness);
+
+        // Bar distortion for barred spirals
+        let barOffset = 0;
+        if (isBarred && dist < def.size * 0.3) {
+          barOffset = (1 - dist / (def.size * 0.3)) * 0.5;
+        }
+
+        // Gaussian spread perpendicular to arm
+        const u1 = Math.random(), u2 = Math.random();
+        const gaussian = Math.sqrt(-2 * Math.log(u1 + 0.0001)) * Math.cos(2 * Math.PI * u2);
+        const spread = gaussian * def.size * def.armWidth * (0.5 + dist / def.size);
+
+        const angle = spiralAngle + barOffset;
+        const px = cx + Math.cos(angle) * dist + Math.cos(angle + Math.PI / 2) * spread;
+        const py = cy + Math.sin(angle) * dist + Math.sin(angle + Math.PI / 2) * spread;
+
+        const distRatio = dist / def.size;
+        // Brightness follows exponential disk profile
+        const diskBright = Math.exp(-dist / (def.size * 0.35));
+        // Arm enhancement — stars closer to arm center are brighter
+        const armProximity = Math.exp(-Math.abs(gaussian) * 0.8);
+        const alpha = diskBright * armProximity * 0.12 * (0.4 + Math.random() * 0.6);
+        const size = 0.3 + Math.random() * 1.2 + (1 - distRatio) * 0.5;
+
+        // Color: young blue stars in arms, redder between
+        const youngness = armProximity * (0.5 + distRatio * 0.5);
+        const cr = def.armColor[0] * youngness + def.dustColor[0] * (1 - youngness);
+        const cg = def.armColor[1] * youngness + def.dustColor[1] * (1 - youngness);
+        const cb = def.armColor[2] * youngness + def.dustColor[2] * (1 - youngness);
+        oc.fillStyle = `rgba(${cr | 0},${cg | 0},${cb | 0},${alpha})`;
+        oc.beginPath();
+        oc.arc(px, py, size, 0, Math.PI * 2);
+        oc.fill();
+      }
+
+      // --- 4. Dark dust lanes (drawn as semi-transparent dark streaks along inner arm edges) ---
+      oc.globalCompositeOperation = 'multiply';
+      const dustParticles = def.diskParticles * 0.15;
+      for (let i = 0; i < dustParticles; i++) {
+        const armIndex = i % def.arms;
+        const armOffset = (armIndex / def.arms) * Math.PI * 2;
+        const dist = Math.pow(Math.random(), 0.4) * def.size * 0.75;
+        const spiralAngle = armOffset + logSpiralAngle(dist, def.armTightness);
+        // Dust sits on the inner (leading) edge of the arm
+        const dustOffset = -def.size * def.armWidth * 0.4;
+        const angle = spiralAngle;
+        const px = cx + Math.cos(angle) * dist + Math.cos(angle + Math.PI / 2) * dustOffset;
+        const py = cy + Math.sin(angle) * dist + Math.sin(angle + Math.PI / 2) * dustOffset;
+        const spreadX = (Math.random() - 0.5) * def.size * def.armWidth * 0.6;
+        const spreadY = (Math.random() - 0.5) * def.size * def.armWidth * 0.6;
+
+        const distRatio = dist / def.size;
+        const alpha = (1 - distRatio) * 0.06 * (0.5 + Math.random() * 0.5);
+        const size = 1 + Math.random() * 3;
+
+        oc.fillStyle = `rgba(${def.dustColor[0] * 0.3 | 0},${def.dustColor[1] * 0.3 | 0},${def.dustColor[2] * 0.3 | 0},${alpha})`;
+        oc.beginPath();
+        oc.arc(px + spreadX, py + spreadY, size, 0, Math.PI * 2);
+        oc.fill();
+      }
+      oc.globalCompositeOperation = 'source-over';
+
+      // --- 5. HII regions (bright pink/red star-forming blobs) ---
+      const hiiCount = 30 + Math.floor(Math.random() * 40);
+      for (let i = 0; i < hiiCount; i++) {
+        const armIndex = i % def.arms;
+        const armOffset = (armIndex / def.arms) * Math.PI * 2;
+        const dist = 15 + Math.random() * def.size * 0.7;
+        const spiralAngle = armOffset + logSpiralAngle(dist, def.armTightness);
+        const spread = (Math.random() - 0.5) * def.size * def.armWidth * 1.5;
+        const px = cx + Math.cos(spiralAngle) * dist + Math.cos(spiralAngle + Math.PI / 2) * spread;
+        const py = cy + Math.sin(spiralAngle) * dist + Math.sin(spiralAngle + Math.PI / 2) * spread;
+        const r = 1.5 + Math.random() * 5;
+        const g = oc.createRadialGradient(px, py, 0, px, py, r);
+        g.addColorStop(0, `rgba(${def.hiiColor[0]},${def.hiiColor[1]},${def.hiiColor[2]},0.18)`);
+        g.addColorStop(0.5, `rgba(${def.hiiColor[0]},${def.hiiColor[1]},${def.hiiColor[2]},0.06)`);
+        g.addColorStop(1, 'rgba(0,0,0,0)');
+        oc.fillStyle = g;
+        oc.beginPath();
+        oc.arc(px, py, r, 0, Math.PI * 2);
+        oc.fill();
+      }
+
+      // --- 6. Bright resolved stars at the outskirts ---
+      const resolvedStars = 80 + Math.floor(Math.random() * 60);
+      for (let i = 0; i < resolvedStars; i++) {
+        const dist = def.size * (0.5 + Math.random() * 0.45);
+        const angle = Math.random() * Math.PI * 2;
+        const px = cx + Math.cos(angle) * dist;
+        const py = cy + Math.sin(angle) * dist;
+        const brightness = 0.1 + Math.random() * 0.25;
+        const starSize = 0.3 + Math.random() * 0.7;
+        // Blue-white hot stars
+        oc.fillStyle = `rgba(200, 220, 255, ${brightness})`;
+        oc.beginPath();
+        oc.arc(px, py, starSize, 0, Math.PI * 2);
+        oc.fill();
+        // Tiny glow
+        if (Math.random() > 0.6) {
+          const sg = oc.createRadialGradient(px, py, 0, px, py, starSize * 3);
+          sg.addColorStop(0, `rgba(200, 220, 255, ${brightness * 0.3})`);
+          sg.addColorStop(1, 'rgba(0,0,0,0)');
+          oc.fillStyle = sg;
+          oc.beginPath();
+          oc.arc(px, py, starSize * 3, 0, Math.PI * 2);
+          oc.fill();
+        }
+      }
+
+    } else {
+      // --- Elliptical galaxy: de Vaucouleurs profile ---
+      for (let i = 0; i < def.diskParticles; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        // Elliptical distribution
+        const rawDist = Math.pow(Math.random(), 0.7) * def.size * 0.85;
+        const axisRatio = 0.55 + Math.random() * 0.15;
+        const px = cx + Math.cos(angle) * rawDist;
+        const py = cy + Math.sin(angle) * rawDist * axisRatio;
+        const dist = Math.sqrt((px - cx) ** 2 + ((py - cy) / axisRatio) ** 2);
+        const alpha = sersicBrightness(dist, def.size * 0.25, 4) * 0.06 * (0.4 + Math.random() * 0.6);
+        const size = 0.3 + Math.random() * 0.8;
+        // Old stellar population — warm yellows/reds
+        const warmth = sersicBrightness(dist, def.size * 0.3, 2);
+        const cr = def.coreColor[0] * warmth + def.armColor[0] * (1 - warmth);
+        const cg = def.coreColor[1] * warmth + def.armColor[1] * (1 - warmth);
+        const cb = def.coreColor[2] * warmth + def.armColor[2] * (1 - warmth);
+        oc.fillStyle = `rgba(${cr | 0},${cg | 0},${cb | 0},${alpha})`;
+        oc.beginPath();
+        oc.arc(px, py, size, 0, Math.PI * 2);
+        oc.fill();
+      }
+      // Globular cluster hints
+      for (let i = 0; i < 20; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const dist = def.size * (0.3 + Math.random() * 0.5);
+        const px = cx + Math.cos(angle) * dist;
+        const py = cy + Math.sin(angle) * dist * 0.6;
+        const r = 1 + Math.random() * 2;
+        const g = oc.createRadialGradient(px, py, 0, px, py, r);
+        g.addColorStop(0, `rgba(${def.coreColor[0]},${def.coreColor[1]},${def.coreColor[2]},0.12)`);
+        g.addColorStop(1, 'rgba(0,0,0,0)');
+        oc.fillStyle = g;
+        oc.beginPath();
+        oc.arc(px, py, r, 0, Math.PI * 2);
+        oc.fill();
+      }
+    }
+
+    return { canvas: offscreen, halfSize: canvasSize / 2 };
+  }
+
+  // Place galaxies and pre-render their textures
+  const galaxies = GALAXY_DEFS.map(def => {
+    const { canvas: texture, halfSize } = renderGalaxyTexture(def);
+    return {
+      ...def,
+      texture,
+      halfSize,
+      x: 100 + Math.random() * (W - 200),
+      y: 100 + Math.random() * (H - 200),
+      rotationSpeed: (Math.random() - 0.5) * 0.003, // very slow rotation
+      currentRotation: def.rotation,
+    };
+  });
+
+  function drawGalaxies(t) {
+    for (const g of galaxies) {
+      g.currentRotation += g.rotationSpeed;
+      ctx.save();
+      ctx.translate(g.x, g.y);
+      ctx.rotate(g.currentRotation);
+      ctx.scale(1, 1 - g.tilt * 0.75);
+      ctx.globalAlpha = g.opacity;
+      ctx.drawImage(g.texture, -g.halfSize, -g.halfSize);
+      ctx.restore();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // --- Nebula clouds ---
+  function drawNebulae() {
+    const nebulae = [
+      { x: W * 0.2, y: H * 0.3, r: 250, color: [60, 30, 100] },
+      { x: W * 0.75, y: H * 0.7, r: 300, color: [30, 50, 100] },
+      { x: W * 0.5, y: H * 0.15, r: 200, color: [80, 30, 60] },
+    ];
+    nebulae.forEach(n => {
+      const g = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.r);
+      g.addColorStop(0, `rgba(${n.color[0]},${n.color[1]},${n.color[2]},0.08)`);
+      g.addColorStop(0.5, `rgba(${n.color[0]},${n.color[1]},${n.color[2]},0.03)`);
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+
+  // --- Mouse interaction ---
+  const mouse = { x: -1000, y: -1000, active: false };
+  const CONNECT_RADIUS = 160;
+  const MAX_CONNECTIONS = 8;
+
+  addEventListener('mousemove', e => {
+    mouse.x = e.clientX;
+    mouse.y = e.clientY;
+    mouse.active = true;
+  });
+  addEventListener('mouseleave', () => { mouse.active = false; });
+  addEventListener('touchmove', e => {
+    const t = e.touches[0];
+    mouse.x = t.clientX;
+    mouse.y = t.clientY;
+    mouse.active = true;
+  });
+  addEventListener('touchend', () => { mouse.active = false; });
+
+  function drawConnections() {
+    if (!mouse.active) return;
+
+    const nearby = [];
+    for (const s of stars) {
+      const dx = s.x - mouse.x;
+      const dy = s.y - mouse.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < CONNECT_RADIUS) {
+        nearby.push({ star: s, dist });
+      }
+    }
+    nearby.sort((a, b) => a.dist - b.dist);
+    const connected = nearby.slice(0, MAX_CONNECTIONS);
+
+    // Lines from cursor to stars
+    for (const { star, dist } of connected) {
+      const alpha = (1 - dist / CONNECT_RADIUS) * 0.6;
+      ctx.strokeStyle = `rgba(120, 160, 255, ${alpha})`;
+      ctx.lineWidth = 0.8;
+      ctx.beginPath();
+      ctx.moveTo(mouse.x, mouse.y);
+      ctx.lineTo(star.x, star.y);
+      ctx.stroke();
+      const grad = ctx.createRadialGradient(star.x, star.y, 0, star.x, star.y, star.radius * 6);
+      grad.addColorStop(0, `rgba(150, 180, 255, ${alpha * 0.5})`);
+      grad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(star.x, star.y, star.radius * 6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Inter-star constellation lines
+    if (connected.length >= 2) {
+      for (let i = 0; i < connected.length - 1; i++) {
+        for (let j = i + 1; j < connected.length; j++) {
+          const a = connected[i].star;
+          const b = connected[j].star;
+          const dx = a.x - b.x;
+          const dy = a.y - b.y;
+          const d = Math.sqrt(dx * dx + dy * dy);
+          if (d < CONNECT_RADIUS * 1.2) {
+            const alpha = (1 - d / (CONNECT_RADIUS * 1.2)) * 0.25;
+            ctx.strokeStyle = `rgba(100, 140, 255, ${alpha})`;
+            ctx.lineWidth = 0.5;
+            ctx.beginPath();
+            ctx.moveTo(a.x, a.y);
+            ctx.lineTo(b.x, b.y);
+            ctx.stroke();
+          }
+        }
+      }
+    }
+
+    // Cursor glow
+    const cg = ctx.createRadialGradient(mouse.x, mouse.y, 0, mouse.x, mouse.y, CONNECT_RADIUS);
+    cg.addColorStop(0, 'rgba(100, 140, 255, 0.06)');
+    cg.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = cg;
+    ctx.beginPath();
+    ctx.arc(mouse.x, mouse.y, CONNECT_RADIUS, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // --- Shooting stars ---
+  const shootingStars = [];
+  function maybeSpawnShootingStar() {
+    if (Math.random() < 0.02 && shootingStars.length < 5) {
+      const angle = -Math.PI / 6 + Math.random() * -Math.PI / 4;
+      shootingStars.push({
+        x: Math.random() * W,
+        y: Math.random() * H * 0.4,
+        vx: Math.cos(angle) * (4 + Math.random() * 4),
+        vy: -Math.sin(angle) * (4 + Math.random() * 4),
+        life: 1,
+        decay: 0.015 + Math.random() * 0.01,
+        len: 40 + Math.random() * 60,
+      });
+    }
+  }
+  function updateShootingStars() {
+    for (let i = shootingStars.length - 1; i >= 0; i--) {
+      const s = shootingStars[i];
+      s.x += s.vx;
+      s.y += s.vy;
+      s.life -= s.decay;
+      if (s.life <= 0) { shootingStars.splice(i, 1); continue; }
+      const alpha = s.life * 0.8;
+      const speed = Math.sqrt(s.vx * s.vx + s.vy * s.vy);
+      const tailX = s.x - s.vx * (s.len / speed) * s.life;
+      const tailY = s.y - s.vy * (s.len / speed) * s.life;
+      const grad = ctx.createLinearGradient(s.x, s.y, tailX, tailY);
+      grad.addColorStop(0, `rgba(255, 255, 255, ${alpha})`);
+      grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+      ctx.strokeStyle = grad;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(s.x, s.y);
+      ctx.lineTo(tailX, tailY);
+      ctx.stroke();
+    }
+  }
+
+  // --- Main loop ---
+  function frame(ts) {
+    const t = ts / 1000;
+    ctx.clearRect(0, 0, W, H);
+
+    const bg = ctx.createLinearGradient(0, 0, 0, H);
+    bg.addColorStop(0, '#05050f');
+    bg.addColorStop(0.5, '#0a0a1a');
+    bg.addColorStop(1, '#060612');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, W, H);
+
+    drawNebulae();
+    drawGalaxies(t);
+
+    for (const s of stars) { s.update(t); s.draw(); }
+
+    maybeSpawnShootingStar();
+    updateShootingStars();
+    drawConnections();
+
+    requestAnimationFrame(frame);
+  }
+
+  requestAnimationFrame(frame);
+})();
+  </script>
 
   <!-- ═══════════════════════════════════════════════════════
      Scroll Animations + Language + Chat + Voice JS
