@@ -1505,6 +1505,7 @@
      ═══════════════════════════════════════════════════════ -->
   <button class="chat-fab" id="chat-fab" onclick="toggleChat()" aria-label="Ask a question">
     <span id="fab-icon">💬</span>
+    <span class="fab-label">Chat with us</span>
   </button>
 
   <div class="chat-panel" id="chat-panel">
@@ -1600,30 +1601,44 @@
       position: fixed;
       bottom: 24px;
       right: 24px;
-      width: 56px;
-      height: 56px;
+      height: 48px;
       background: #000000;
       border: 1.5px solid rgba(255, 255, 255, 0.3);
-      border-radius: 50%;
+      border-radius: 980px;
       display: flex;
       align-items: center;
       justify-content: center;
+      gap: 8px;
+      padding: 0 20px;
       cursor: pointer;
       z-index: 200;
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
       transition: transform 0.2s, box-shadow 0.2s;
-      font-size: 24px;
+      font-size: 18px;
       color: white;
       line-height: 1;
     }
 
+    .fab-label {
+      font-family: var(--font);
+      font-size: 14px;
+      font-weight: 600;
+      color: white;
+      letter-spacing: 0.2px;
+    }
+
     .chat-fab:hover {
-      transform: scale(1.08);
-      box-shadow: 0 6px 28px rgba(0, 0, 0, 0.5);
+      transform: scale(1.04);
+      box-shadow: 0 6px 28px rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.5);
+    }
+
+    .chat-fab.open .fab-label {
+      display: none;
     }
 
     .chat-fab.open #fab-icon {
-      font-size: 22px;
+      font-size: 18px;
     }
 
     /* ── Chat Panel ── */
