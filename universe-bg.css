@@ -161,8 +161,8 @@ kbd {
 }
 
 .hero-badge {
-  background: rgba(255, 255, 255, 0.06) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  background: #000000 !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
 }
 
 /* Buttons — white/black */
@@ -182,7 +182,8 @@ kbd {
 
 /* Footer */
 footer {
-  border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+  background: #000000 !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
 
 /* Floating badges */
