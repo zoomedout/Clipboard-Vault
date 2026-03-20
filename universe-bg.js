@@ -81,7 +81,7 @@
 
     // --- Layer 3: Stars ---
     // Distribution: 80% faint, 15% medium, 5% bright
-    const TOTAL_STARS = 12000;
+    const TOTAL_STARS = 16000;
     stars.length = 0;
 
     for (let i = 0; i < TOTAL_STARS; i++) {
@@ -113,18 +113,18 @@
         r = 255; g = 220; b = 200; // orange-ish
       }
 
-      if (roll < 0.80) {
+      if (roll < 0.65) {
         // Faint — tiny sharp dots
-        radius = 0.3 + Math.random() * 0.4;
-        alpha = 0.15 + Math.random() * 0.35;
-      } else if (roll < 0.95) {
+        radius = 0.4 + Math.random() * 0.5;
+        alpha = 0.3 + Math.random() * 0.4;
+      } else if (roll < 0.90) {
         // Medium
-        radius = 0.5 + Math.random() * 0.6;
-        alpha = 0.5 + Math.random() * 0.3;
+        radius = 0.6 + Math.random() * 0.7;
+        alpha = 0.6 + Math.random() * 0.3;
       } else {
-        // Bright — still small but fully opaque
-        radius = 0.7 + Math.random() * 0.8;
-        alpha = 0.8 + Math.random() * 0.2;
+        // Bright
+        radius = 0.9 + Math.random() * 0.9;
+        alpha = 0.85 + Math.random() * 0.15;
       }
 
       // Boost brightness inside Milky Way
@@ -197,18 +197,18 @@
     const connected = nearby.slice(0, MAX_CONNECTIONS);
 
     for (const { star, dist } of connected) {
-      const alpha = (1 - dist / CONNECT_RADIUS) * 0.4;
+      const alpha = (1 - dist / CONNECT_RADIUS) * 0.8;
       ctx.strokeStyle = `rgba(180, 200, 255, ${alpha})`;
-      ctx.lineWidth = 0.5;
+      ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(mouse.x, mouse.y);
       ctx.lineTo(star.x, star.y);
       ctx.stroke();
 
-      // Subtle brightening of connected star
-      const glowR = star.radius * 4;
+      // Brightening of connected star
+      const glowR = star.radius * 6;
       const grad = ctx.createRadialGradient(star.x, star.y, 0, star.x, star.y, glowR);
-      grad.addColorStop(0, `rgba(200, 210, 255, ${alpha * 0.4})`);
+      grad.addColorStop(0, `rgba(200, 210, 255, ${alpha * 0.6})`);
       grad.addColorStop(1, 'rgba(0,0,0,0)');
       ctx.fillStyle = grad;
       ctx.beginPath();
@@ -225,9 +225,9 @@
           const dy = a.y - b.y;
           const d = Math.sqrt(dx * dx + dy * dy);
           if (d < CONNECT_RADIUS * 1.2) {
-            const alpha = (1 - d / (CONNECT_RADIUS * 1.2)) * 0.15;
+            const alpha = (1 - d / (CONNECT_RADIUS * 1.2)) * 0.4;
             ctx.strokeStyle = `rgba(160, 180, 255, ${alpha})`;
-            ctx.lineWidth = 0.3;
+            ctx.lineWidth = 0.7;
             ctx.beginPath();
             ctx.moveTo(a.x, a.y);
             ctx.lineTo(b.x, b.y);
@@ -239,7 +239,7 @@
 
     // Subtle cursor glow
     const cg = ctx.createRadialGradient(mouse.x, mouse.y, 0, mouse.x, mouse.y, CONNECT_RADIUS * 0.6);
-    cg.addColorStop(0, 'rgba(100, 140, 255, 0.03)');
+    cg.addColorStop(0, 'rgba(100, 140, 255, 0.08)');
     cg.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = cg;
     ctx.beginPath();
