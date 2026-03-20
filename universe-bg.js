@@ -188,7 +188,7 @@
     if (now - lastSpawnTime > SPAWN_INTERVAL && shootingStars.length < 2) {
       lastSpawnTime = now;
       const angle = Math.random() * Math.PI * 2;
-      const speed = 1.5 + Math.random() * 1.5;
+      const speed = 0.7 + Math.random() * 0.8;
       shootingStars.push({
         x: Math.random() * W,
         y: Math.random() * H,
