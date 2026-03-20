@@ -81,7 +81,7 @@
 
     // --- Layer 3: Stars ---
     // Distribution: 80% faint, 15% medium, 5% bright
-    const TOTAL_STARS = 3500;
+    const TOTAL_STARS = 12000;
     stars.length = 0;
 
     for (let i = 0; i < TOTAL_STARS; i++) {
@@ -153,7 +153,7 @@
       }
 
       // Store for mouse interaction (only brighter stars to save perf)
-      if (alpha > 0.3) {
+      if (alpha > 0.15) {
         stars.push({ x, y, radius: Math.max(radius, 0.5), brightness: alpha });
       }
     }
@@ -164,8 +164,8 @@
 
   // --- Mouse interaction ---
   const mouse = { x: -1000, y: -1000, active: false };
-  const CONNECT_RADIUS = 140;
-  const MAX_CONNECTIONS = 6;
+  const CONNECT_RADIUS = 180;
+  const MAX_CONNECTIONS = 10;
 
   addEventListener('mousemove', e => {
     mouse.x = e.clientX;
