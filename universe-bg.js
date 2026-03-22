@@ -47,17 +47,18 @@
         r = 255; g = 220; b = 200; // orange-ish
       }
 
+      const sizeScale = isMobile ? 1.4 : 1;
       if (roll < 0.65) {
         // Faint — tiny sharp dots
-        radius = 0.4 + Math.random() * 0.5;
+        radius = (0.4 + Math.random() * 0.5) * sizeScale;
         alpha = 0.3 + Math.random() * 0.4;
       } else if (roll < 0.90) {
         // Medium
-        radius = 0.6 + Math.random() * 0.7;
+        radius = (0.6 + Math.random() * 0.7) * sizeScale;
         alpha = 0.6 + Math.random() * 0.3;
       } else {
         // Bright
-        radius = 0.9 + Math.random() * 0.9;
+        radius = (0.9 + Math.random() * 0.9) * sizeScale;
         alpha = 0.85 + Math.random() * 0.15;
       }
 
@@ -96,8 +97,9 @@
 
   // --- Mouse interaction ---
   const mouse = { x: -1000, y: -1000, active: false };
-  const CONNECT_RADIUS = 180;
-  const MAX_CONNECTIONS = 10;
+  const isMobile = window.innerWidth < 768;
+  const CONNECT_RADIUS = isMobile ? 300 : 180;
+  const MAX_CONNECTIONS = isMobile ? 20 : 10;
 
   addEventListener('mousemove', e => {
     mouse.x = e.clientX;
@@ -105,6 +107,12 @@
     mouse.active = true;
   });
   addEventListener('mouseleave', () => { mouse.active = false; });
+  addEventListener('touchstart', e => {
+    const t = e.touches[0];
+    mouse.x = t.clientX;
+    mouse.y = t.clientY;
+    mouse.active = true;
+  });
   addEventListener('touchmove', e => {
     const t = e.touches[0];
     mouse.x = t.clientX;
