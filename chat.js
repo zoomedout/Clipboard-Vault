@@ -525,6 +525,24 @@ async function startLiveSession() {
   }
 }
 
+function sendPcmToWs(pcmBuffer) {
+  if (!liveWs || liveWs.readyState !== WebSocket.OPEN) return;
+  var overlay = document.getElementById('voice-overlay');
+  if (overlay.getAttribute('data-state') === 'speaking') return;
+
+  var bytes = new Uint8Array(pcmBuffer);
+  var b64 = btoa(String.fromCharCode.apply(null, bytes));
+
+  liveWs.send(JSON.stringify({
+    realtimeInput: {
+      mediaChunks: [{
+        mimeType: 'audio/pcm;rate=16000',
+        data: b64
+      }]
+    }
+  }));
+}
+
 async function startMicCapture() {
   setVoiceState('listening');
 
@@ -541,40 +559,38 @@ async function startMicCapture() {
     liveAudioCtx = new AudioContext({ sampleRate: 16000 });
     var source = liveAudioCtx.createMediaStreamSource(liveMicStream);
 
-    var processor = liveAudioCtx.createScriptProcessor(4096, 1, 1);
-    processor.onaudioprocess = function (e) {
-      if (!liveWs || liveWs.readyState !== WebSocket.OPEN) return;
-      var overlay = document.getElementById('voice-overlay');
-      if (overlay.getAttribute('data-state') === 'speaking') return;
-      var input = e.inputBuffer.getChannelData(0);
-
-      var pcm16 = new Int16Array(input.length);
-      for (var i = 0; i < input.length; i++) {
-        var s = Math.max(-1, Math.min(1, input[i]));
-        pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
-      }
-
-      var bytes = new Uint8Array(pcm16.buffer);
-      var b64 = btoa(String.fromCharCode.apply(null, bytes));
-
-      liveWs.send(JSON.stringify({
-        realtimeInput: {
-          mediaChunks: [{
-            mimeType: 'audio/pcm;rate=16000',
-            data: b64
-          }]
+    if (liveAudioCtx.audioWorklet) {
+      // Modern path: AudioWorkletNode (off main thread)
+      await liveAudioCtx.audioWorklet.addModule('mic-processor.js');
+      var workletNode = new AudioWorkletNode(liveAudioCtx, 'mic-processor');
+      workletNode.port.onmessage = function (e) {
+        sendPcmToWs(e.data);
+      };
+      source.connect(workletNode);
+      workletNode.connect(liveAudioCtx.destination); // required for worklet to run; output is silent (no gain node needed — worklet outputs silence)
+      liveWorklet = workletNode;
+      devLog('ok', 'Voice: mic capture started via AudioWorklet (16kHz PCM)');
+    } else {
+      // Fallback: ScriptProcessorNode (main thread, deprecated)
+      devLog('', 'Voice: AudioWorklet not supported, falling back to ScriptProcessor');
+      var processor = liveAudioCtx.createScriptProcessor(4096, 1, 1);
+      processor.onaudioprocess = function (e) {
+        var input = e.inputBuffer.getChannelData(0);
+        var pcm16 = new Int16Array(input.length);
+        for (var i = 0; i < input.length; i++) {
+          var s = Math.max(-1, Math.min(1, input[i]));
+          pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
         }
-      }));
-    };
-
-    var silentGain = liveAudioCtx.createGain();
-    silentGain.gain.value = 0;
-    silentGain.connect(liveAudioCtx.destination);
-    source.connect(processor);
-    processor.connect(silentGain);
-    liveWorklet = processor;
-
-    devLog('ok', 'Voice: mic capture started (16kHz PCM)');
+        sendPcmToWs(pcm16.buffer);
+      };
+      var silentGain = liveAudioCtx.createGain();
+      silentGain.gain.value = 0;
+      silentGain.connect(liveAudioCtx.destination);
+      source.connect(processor);
+      processor.connect(silentGain);
+      liveWorklet = processor;
+      devLog('ok', 'Voice: mic capture started via ScriptProcessor (16kHz PCM)');
+    }
   } catch (e) {
     devLog('err', 'Voice: mic access failed: ' + e.message);
     document.getElementById('voice-status').textContent = 'Mic access denied. Tap End to close.';
