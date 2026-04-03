@@ -38,6 +38,11 @@ function toggleDevMode(on) {
 }
 
 function devLog(level, msg) {
+  // Always log to browser console for debugging
+  if (level === 'err') console.error('[CV]', msg);
+  else if (level === 'ok') console.info('[CV]', msg);
+  else console.log('[CV]', msg);
+
   if (!devMode) return;
   var log = document.getElementById('chat-devlog');
   if (!log) return;
@@ -514,11 +519,11 @@ async function startLiveSession() {
     };
 
     liveWs.onerror = function (e) {
-      devLog('err', 'Voice: WebSocket error');
+      devLog('err', 'Voice: WebSocket error: ' + JSON.stringify({ type: e.type, message: e.message || 'unknown' }));
     };
 
     liveWs.onclose = function (e) {
-      devLog('', 'Voice: WebSocket closed (code=' + e.code + ', reason=' + (e.reason || 'none') + ')');
+      devLog('err', 'Voice: WebSocket closed (code=' + e.code + ', wasClean=' + e.wasClean + ', reason=' + (e.reason || 'none') + ')');
       if (!liveEnding) {
         setVoiceState('error');
         cleanupLiveResources();
