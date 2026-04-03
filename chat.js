@@ -743,12 +743,9 @@ function interruptLive() {
   livePlaybackSources = [];
   liveNextPlayTime = 0;
 
-  // Tell Gemini to stop generating by ending its current turn
-  if (liveWs && liveWs.readyState === WebSocket.OPEN) {
-    liveWs.send(JSON.stringify({
-      clientContent: { turnComplete: true }
-    }));
-  }
+  // Don't send any control message to Gemini — its native audio model
+  // detects barge-in automatically from the incoming mic audio stream.
+  // Sending clientContent.turnComplete crashes the WebSocket connection.
 
   setVoiceState('listening');
 }
