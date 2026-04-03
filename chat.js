@@ -427,9 +427,10 @@ var liveInterrupted = false;
 var liveEnding = false;
 var liveConnected = false;
 var livePlaybackSources = [];    // active BufferSource nodes for granular stop
-var VOICE_RMS_THRESHOLD = 0.015; // energy threshold for speech detection during playback
+var VOICE_RMS_THRESHOLD = 0.04;  // base energy threshold for speech detection during playback
 var voiceSpeechFrames = 0;       // consecutive frames above threshold
-var VOICE_SPEECH_FRAMES_NEEDED = 3; // require 3 consecutive loud frames to trigger interrupt (~190ms at 4096 samples/16kHz)
+var VOICE_SPEECH_FRAMES_NEEDED = 4; // require 4 consecutive loud frames to trigger interrupt (~250ms at 4096 samples/16kHz)
+var livePlaybackRms = 0;         // current playback energy level (for adaptive threshold)
 
 function setVoiceState(state) {
   var overlay = document.getElementById('voice-overlay');
@@ -495,6 +496,7 @@ async function startLiveSession() {
           if (sc.turnComplete) {
             devLog('', 'Voice: turn complete');
             liveInterrupted = false;
+            livePlaybackRms = 0;
             setVoiceState('listening');
             return;
           }
@@ -558,23 +560,29 @@ function sendPcmToWs(pcmBuffer) {
     }
   }
 
-  // Detect user speech via RMS energy during playback
+  // Detect user speech via adaptive RMS threshold during playback
   if (isSpeakingState) {
-    if (rms > VOICE_RMS_THRESHOLD) {
+    // Adaptive threshold: base threshold + scaled playback energy
+    // User must be significantly louder than the TTS bleed-through
+    var adaptiveThreshold = VOICE_RMS_THRESHOLD + livePlaybackRms * 1.5;
+    if (rms > adaptiveThreshold) {
       voiceSpeechFrames++;
       if (voiceSpeechFrames >= VOICE_SPEECH_FRAMES_NEEDED) {
-        devLog('', 'Voice: user speech detected during playback (RMS=' + rms.toFixed(4) + '), auto-interrupting');
+        devLog('', 'Voice: user speech detected (mic=' + rms.toFixed(4) + ' threshold=' + adaptiveThreshold.toFixed(4) + '), auto-interrupting');
         interruptLive();
         voiceSpeechFrames = 0;
       }
     } else {
       voiceSpeechFrames = 0;
     }
+    // Don't send mic data while Gemini is speaking — browser AEC can't
+    // fully remove TTS, so sending it would feed Gemini its own voice
+    return;
   } else {
     voiceSpeechFrames = 0;
   }
 
-  // Always send mic data to Gemini (don't gate during playback)
+  // Send mic data to Gemini only when not playing back TTS
   var bytes = new Uint8Array(pcmBuffer);
   var b64 = btoa(String.fromCharCode.apply(null, bytes));
 
@@ -651,9 +659,13 @@ function queueAudioChunk(b64Data) {
 
   var int16 = new Int16Array(bytes.buffer);
   var float32 = new Float32Array(int16.length);
+  var pbSumSq = 0;
   for (var i = 0; i < int16.length; i++) {
     float32[i] = int16[i] / 32768;
+    pbSumSq += float32[i] * float32[i];
   }
+  // Track playback energy for adaptive interrupt threshold
+  livePlaybackRms = Math.sqrt(pbSumSq / int16.length);
 
   if (!livePlaybackCtx) {
     livePlaybackCtx = new AudioContext({ sampleRate: 24000 });
@@ -708,6 +720,7 @@ function interruptLive() {
   devLog('', 'Voice: interrupting playback');
   liveInterrupted = true;
   voiceSpeechFrames = 0;
+  livePlaybackRms = 0;
 
   // Stop all queued audio sources without destroying the context
   for (var i = 0; i < livePlaybackSources.length; i++) {
