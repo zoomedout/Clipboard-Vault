@@ -427,10 +427,8 @@ var liveInterrupted = false;
 var liveEnding = false;
 var liveConnected = false;
 var livePlaybackSources = [];    // active BufferSource nodes for granular stop
-var VOICE_RMS_THRESHOLD = 0.04;  // base energy threshold for speech detection during playback
-var voiceSpeechFrames = 0;       // consecutive frames above threshold
-var VOICE_SPEECH_FRAMES_NEEDED = 4; // require 4 consecutive loud frames to trigger interrupt (~250ms at 4096 samples/16kHz)
-var livePlaybackRms = 0;         // current playback energy level (for adaptive threshold)
+var liveVad = null;              // Silero VAD instance for speech detection
+var liveSpeaking = false;        // true when VAD detects user is speaking
 
 function setVoiceState(state) {
   var overlay = document.getElementById('voice-overlay');
@@ -496,7 +494,6 @@ async function startLiveSession() {
           if (sc.turnComplete) {
             devLog('', 'Voice: turn complete');
             liveInterrupted = false;
-            livePlaybackRms = 0;
             setVoiceState('listening');
             return;
           }
@@ -537,50 +534,11 @@ async function startLiveSession() {
 function sendPcmToWs(pcmBuffer) {
   if (!liveWs || liveWs.readyState !== WebSocket.OPEN) return;
 
-  var int16 = new Int16Array(pcmBuffer);
+  // Don't send mic data while Gemini is speaking — browser AEC can't
+  // fully remove TTS, so sending it would feed Gemini its own voice.
+  // Silero VAD handles interrupt detection separately via its own mic stream.
   var overlay = document.getElementById('voice-overlay');
-  var isSpeakingState = overlay.getAttribute('data-state') === 'speaking';
-
-  // Compute RMS for both orb visualization and speech detection
-  var sumSq = 0;
-  for (var k = 0; k < int16.length; k++) {
-    var norm = int16[k] / 32768;
-    sumSq += norm * norm;
-  }
-  var rms = Math.sqrt(sumSq / int16.length);
-
-  // Animate orb to mic level when listening
-  if (!isSpeakingState) {
-    var orb = document.querySelector('.voice-orb');
-    if (orb) {
-      var scale = 1 + Math.min(rms * 8, 0.35); // scale 1.0 – 1.35
-      var glow = Math.min(rms * 600, 50);        // glow 0 – 50px
-      orb.style.transform = 'scale(' + scale.toFixed(3) + ')';
-      orb.style.boxShadow = '0 0 ' + glow.toFixed(0) + 'px rgba(0, 113, 227, ' + Math.min(0.3 + rms * 4, 0.8).toFixed(2) + ')';
-    }
-  }
-
-  // Detect user speech via adaptive RMS threshold during playback
-  if (isSpeakingState) {
-    // Adaptive threshold: base threshold + scaled playback energy
-    // User must be significantly louder than the TTS bleed-through
-    var adaptiveThreshold = VOICE_RMS_THRESHOLD + livePlaybackRms * 1.5;
-    if (rms > adaptiveThreshold) {
-      voiceSpeechFrames++;
-      if (voiceSpeechFrames >= VOICE_SPEECH_FRAMES_NEEDED) {
-        devLog('', 'Voice: user speech detected (mic=' + rms.toFixed(4) + ' threshold=' + adaptiveThreshold.toFixed(4) + '), auto-interrupting');
-        interruptLive();
-        voiceSpeechFrames = 0;
-      }
-    } else {
-      voiceSpeechFrames = 0;
-    }
-    // Don't send mic data while Gemini is speaking — browser AEC can't
-    // fully remove TTS, so sending it would feed Gemini its own voice
-    return;
-  } else {
-    voiceSpeechFrames = 0;
-  }
+  if (overlay.getAttribute('data-state') === 'speaking') return;
 
   // Send mic data to Gemini only when not playing back TTS
   var bytes = new Uint8Array(pcmBuffer);
@@ -620,7 +578,7 @@ async function startMicCapture() {
         sendPcmToWs(e.data);
       };
       source.connect(workletNode);
-      workletNode.connect(liveAudioCtx.destination); // required for worklet to run; output is silent (no gain node needed — worklet outputs silence)
+      workletNode.connect(liveAudioCtx.destination);
       liveWorklet = workletNode;
       devLog('ok', 'Voice: mic capture started via AudioWorklet (16kHz PCM)');
     } else {
@@ -644,10 +602,60 @@ async function startMicCapture() {
       liveWorklet = processor;
       devLog('ok', 'Voice: mic capture started via ScriptProcessor (16kHz PCM)');
     }
+
+    // Start Silero VAD for speech detection (used for auto-interruption)
+    await startVad();
+
   } catch (e) {
     devLog('err', 'Voice: mic access failed: ' + e.message);
     document.getElementById('voice-status').textContent = 'Mic access denied. Tap End to close.';
     setVoiceState('error');
+  }
+}
+
+async function startVad() {
+  if (typeof vad === 'undefined' || !vad.MicVAD) {
+    devLog('', 'Voice: Silero VAD not available, auto-interruption disabled');
+    return;
+  }
+  try {
+    liveVad = await vad.MicVAD.new({
+      additionalAudioConstraints: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true
+      },
+      onSpeechStart: function () {
+        liveSpeaking = true;
+        devLog('', 'Voice: VAD speech start');
+        var overlay = document.getElementById('voice-overlay');
+        if (overlay.getAttribute('data-state') === 'speaking') {
+          devLog('', 'Voice: user speaking during playback, auto-interrupting');
+          interruptLive();
+        }
+      },
+      onSpeechEnd: function () {
+        liveSpeaking = false;
+        devLog('', 'Voice: VAD speech end');
+      },
+      onFrameProcessed: function (probs) {
+        // Drive orb reactivity from speech probability when listening
+        var overlay = document.getElementById('voice-overlay');
+        if (overlay.getAttribute('data-state') !== 'listening') return;
+        var orb = document.querySelector('.voice-orb');
+        if (!orb) return;
+        var p = probs.isSpeech;
+        var scale = 1 + p * 0.35;
+        var glow = p * 50;
+        orb.style.transform = 'scale(' + scale.toFixed(3) + ')';
+        orb.style.boxShadow = '0 0 ' + glow.toFixed(0) + 'px rgba(0, 113, 227, ' + (0.3 + p * 0.5).toFixed(2) + ')';
+      }
+    });
+    liveVad.start();
+    devLog('ok', 'Voice: Silero VAD started');
+  } catch (e) {
+    devLog('err', 'Voice: VAD init failed: ' + e.message);
+    liveVad = null;
   }
 }
 
@@ -659,13 +667,9 @@ function queueAudioChunk(b64Data) {
 
   var int16 = new Int16Array(bytes.buffer);
   var float32 = new Float32Array(int16.length);
-  var pbSumSq = 0;
   for (var i = 0; i < int16.length; i++) {
     float32[i] = int16[i] / 32768;
-    pbSumSq += float32[i] * float32[i];
   }
-  // Track playback energy for adaptive interrupt threshold
-  livePlaybackRms = Math.sqrt(pbSumSq / int16.length);
 
   if (!livePlaybackCtx) {
     livePlaybackCtx = new AudioContext({ sampleRate: 24000 });
@@ -692,6 +696,11 @@ function queueAudioChunk(b64Data) {
 }
 
 function cleanupLiveResources() {
+  if (liveVad) {
+    liveVad.pause();
+    liveVad = null;
+    liveSpeaking = false;
+  }
   if (liveMicStream) {
     liveMicStream.getTracks().forEach(function (t) { t.stop(); });
     liveMicStream = null;
@@ -719,8 +728,6 @@ function cleanupLiveResources() {
 function interruptLive() {
   devLog('', 'Voice: interrupting playback');
   liveInterrupted = true;
-  voiceSpeechFrames = 0;
-  livePlaybackRms = 0;
 
   // Stop all queued audio sources without destroying the context
   for (var i = 0; i < livePlaybackSources.length; i++) {
