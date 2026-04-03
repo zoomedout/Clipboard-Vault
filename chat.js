@@ -426,6 +426,7 @@ var liveNextPlayTime = 0;
 var liveInterrupted = false;
 var liveEnding = false;
 var liveConnected = false;
+var livePlaybackSources = [];    // active BufferSource nodes for granular stop
 var VOICE_RMS_THRESHOLD = 0.015; // energy threshold for speech detection during playback
 var voiceSpeechFrames = 0;       // consecutive frames above threshold
 var VOICE_SPEECH_FRAMES_NEEDED = 3; // require 3 consecutive loud frames to trigger interrupt (~190ms at 4096 samples/16kHz)
@@ -655,6 +656,12 @@ function queueAudioChunk(b64Data) {
   var startAt = Math.max(liveNextPlayTime, ctx.currentTime);
   source.start(startAt);
   liveNextPlayTime = startAt + buffer.duration;
+
+  livePlaybackSources.push(source);
+  source.onended = function () {
+    var idx = livePlaybackSources.indexOf(source);
+    if (idx !== -1) livePlaybackSources.splice(idx, 1);
+  };
 }
 
 function cleanupLiveResources() {
@@ -672,6 +679,10 @@ function cleanupLiveResources() {
   }
 
   liveNextPlayTime = 0;
+  for (var i = 0; i < livePlaybackSources.length; i++) {
+    try { livePlaybackSources[i].stop(); } catch (e) { }
+  }
+  livePlaybackSources = [];
   if (livePlaybackCtx) {
     livePlaybackCtx.close().catch(function () { });
     livePlaybackCtx = null;
@@ -682,11 +693,14 @@ function interruptLive() {
   devLog('', 'Voice: interrupting playback');
   liveInterrupted = true;
   voiceSpeechFrames = 0;
-  liveNextPlayTime = 0;
-  if (livePlaybackCtx) {
-    livePlaybackCtx.close().catch(function () { });
-    livePlaybackCtx = null;
+
+  // Stop all queued audio sources without destroying the context
+  for (var i = 0; i < livePlaybackSources.length; i++) {
+    try { livePlaybackSources[i].stop(); } catch (e) { }
   }
+  livePlaybackSources = [];
+  liveNextPlayTime = 0;
+
   setVoiceState('listening');
 }
 
