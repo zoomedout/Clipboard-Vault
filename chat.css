@@ -349,6 +349,8 @@ body.te [lang="en"] {
 
 .voice-overlay[data-state="listening"] .voice-orb {
   box-shadow: 0 0 30px rgba(0, 113, 227, 0.3);
+  /* transform + box-shadow driven by JS via inline style for mic reactivity */
+  transition: transform 0.08s ease-out, box-shadow 0.08s ease-out;
 }
 
 .voice-overlay[data-state="listening"] .voice-orb-ring {

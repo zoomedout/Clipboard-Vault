@@ -434,6 +434,9 @@ var VOICE_SPEECH_FRAMES_NEEDED = 3; // require 3 consecutive loud frames to trig
 function setVoiceState(state) {
   var overlay = document.getElementById('voice-overlay');
   var status = document.getElementById('voice-status');
+  // Reset inline orb styles so CSS animations can take over
+  var orb = document.querySelector('.voice-orb');
+  if (orb) { orb.style.transform = ''; orb.style.boxShadow = ''; }
   overlay.setAttribute('data-state', state);
   if (state === 'connecting') status.textContent = 'Connecting...';
   else if (state === 'listening') status.textContent = 'Listening...';
@@ -536,15 +539,27 @@ function sendPcmToWs(pcmBuffer) {
   var overlay = document.getElementById('voice-overlay');
   var isSpeakingState = overlay.getAttribute('data-state') === 'speaking';
 
-  // Detect user speech via RMS energy
-  if (isSpeakingState) {
-    var sumSq = 0;
-    for (var i = 0; i < int16.length; i++) {
-      var norm = int16[i] / 32768;
-      sumSq += norm * norm;
-    }
-    var rms = Math.sqrt(sumSq / int16.length);
+  // Compute RMS for both orb visualization and speech detection
+  var sumSq = 0;
+  for (var k = 0; k < int16.length; k++) {
+    var norm = int16[k] / 32768;
+    sumSq += norm * norm;
+  }
+  var rms = Math.sqrt(sumSq / int16.length);
 
+  // Animate orb to mic level when listening
+  if (!isSpeakingState) {
+    var orb = document.querySelector('.voice-orb');
+    if (orb) {
+      var scale = 1 + Math.min(rms * 8, 0.35); // scale 1.0 – 1.35
+      var glow = Math.min(rms * 600, 50);        // glow 0 – 50px
+      orb.style.transform = 'scale(' + scale.toFixed(3) + ')';
+      orb.style.boxShadow = '0 0 ' + glow.toFixed(0) + 'px rgba(0, 113, 227, ' + Math.min(0.3 + rms * 4, 0.8).toFixed(2) + ')';
+    }
+  }
+
+  // Detect user speech via RMS energy during playback
+  if (isSpeakingState) {
     if (rms > VOICE_RMS_THRESHOLD) {
       voiceSpeechFrames++;
       if (voiceSpeechFrames >= VOICE_SPEECH_FRAMES_NEEDED) {
