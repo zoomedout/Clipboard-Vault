@@ -529,7 +529,15 @@ async function startMicCapture() {
   setVoiceState('listening');
 
   try {
-    liveMicStream = await navigator.mediaDevices.getUserMedia({ audio: { sampleRate: 16000, channelCount: 1 } });
+    liveMicStream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        sampleRate: 16000,
+        channelCount: 1,
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true
+      }
+    });
     liveAudioCtx = new AudioContext({ sampleRate: 16000 });
     var source = liveAudioCtx.createMediaStreamSource(liveMicStream);
 
