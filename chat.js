@@ -54,7 +54,7 @@ function devLog(level, msg) {
 
 /* ── Chat ──────────────────────────────────────────────── */
 var WORKER_URL = 'https://clipboard-vault-chat.argyu.workers.dev';
-var PROXY_URL = isLocal ? 'http://localhost:5193/v1/messages' : WORKER_URL + '/v1/messages';
+var PROXY_URL = WORKER_URL + '/v1/messages';
 
 var SYSTEM_PROMPT = 'You are a friendly help assistant embedded in the Clipboard Vault user guide '
   + '\u2014 a clipboard manager app for Mac, iPhone, and iPad built by Arjun Donthala. Priced at $9.99 one-time purchase (no subscription).\n\n'
@@ -416,7 +416,7 @@ function stopMicInput() {
 }
 
 /* ── Voice Mode (Gemini Live) ─────────────────────────── */
-var LIVE_WS_URL = isLocal ? 'ws://localhost:5194' : WORKER_URL.replace('https://', 'wss://');
+var LIVE_WS_URL = WORKER_URL.replace('https://', 'wss://');
 var liveWs = null;
 var liveMicStream = null;
 var liveAudioCtx = null;
