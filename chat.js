@@ -701,6 +701,13 @@ function interruptLive() {
   livePlaybackSources = [];
   liveNextPlayTime = 0;
 
+  // Tell Gemini to stop generating by ending its current turn
+  if (liveWs && liveWs.readyState === WebSocket.OPEN) {
+    liveWs.send(JSON.stringify({
+      clientContent: { turnComplete: true }
+    }));
+  }
+
   setVoiceState('listening');
 }
 
