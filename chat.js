@@ -426,6 +426,9 @@ var liveNextPlayTime = 0;
 var liveInterrupted = false;
 var liveEnding = false;
 var liveConnected = false;
+var VOICE_RMS_THRESHOLD = 0.015; // energy threshold for speech detection during playback
+var voiceSpeechFrames = 0;       // consecutive frames above threshold
+var VOICE_SPEECH_FRAMES_NEEDED = 3; // require 3 consecutive loud frames to trigger interrupt (~190ms at 4096 samples/16kHz)
 
 function setVoiceState(state) {
   var overlay = document.getElementById('voice-overlay');
@@ -527,9 +530,35 @@ async function startLiveSession() {
 
 function sendPcmToWs(pcmBuffer) {
   if (!liveWs || liveWs.readyState !== WebSocket.OPEN) return;
-  var overlay = document.getElementById('voice-overlay');
-  if (overlay.getAttribute('data-state') === 'speaking') return;
 
+  var int16 = new Int16Array(pcmBuffer);
+  var overlay = document.getElementById('voice-overlay');
+  var isSpeakingState = overlay.getAttribute('data-state') === 'speaking';
+
+  // Detect user speech via RMS energy
+  if (isSpeakingState) {
+    var sumSq = 0;
+    for (var i = 0; i < int16.length; i++) {
+      var norm = int16[i] / 32768;
+      sumSq += norm * norm;
+    }
+    var rms = Math.sqrt(sumSq / int16.length);
+
+    if (rms > VOICE_RMS_THRESHOLD) {
+      voiceSpeechFrames++;
+      if (voiceSpeechFrames >= VOICE_SPEECH_FRAMES_NEEDED) {
+        devLog('', 'Voice: user speech detected during playback (RMS=' + rms.toFixed(4) + '), auto-interrupting');
+        interruptLive();
+        voiceSpeechFrames = 0;
+      }
+    } else {
+      voiceSpeechFrames = 0;
+    }
+  } else {
+    voiceSpeechFrames = 0;
+  }
+
+  // Always send mic data to Gemini (don't gate during playback)
   var bytes = new Uint8Array(pcmBuffer);
   var b64 = btoa(String.fromCharCode.apply(null, bytes));
 
@@ -652,6 +681,7 @@ function cleanupLiveResources() {
 function interruptLive() {
   devLog('', 'Voice: interrupting playback');
   liveInterrupted = true;
+  voiceSpeechFrames = 0;
   liveNextPlayTime = 0;
   if (livePlaybackCtx) {
     livePlaybackCtx.close().catch(function () { });
