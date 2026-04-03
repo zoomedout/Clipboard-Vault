@@ -503,7 +503,7 @@ async function startLiveSession() {
             return;
           }
 
-          if (sc.modelTurn && sc.modelTurn.parts) {
+          if (sc.modelTurn && sc.modelTurn.parts && !liveInterrupted) {
             for (var i = 0; i < sc.modelTurn.parts.length; i++) {
               var part = sc.modelTurn.parts[i];
               if (part.inlineData && part.inlineData.data) {
