@@ -434,6 +434,8 @@ var liveConnected = false;
 var livePlaybackSources = [];    // active BufferSource nodes for granular stop
 var liveVad = null;              // Silero VAD instance for speech detection
 var liveSpeaking = false;        // true when VAD detects user is speaking
+var thinkingTickInterval = null; // interval for thinking tick sound
+var thinkingTickCtx = null;      // AudioContext for tick generation
 
 function setVoiceState(state) {
   var overlay = document.getElementById('voice-overlay');
@@ -445,8 +447,46 @@ function setVoiceState(state) {
   if (state === 'connecting') status.textContent = 'Connecting...';
   else if (state === 'listening') status.textContent = 'Listening...';
   else if (state === 'speaking') status.textContent = 'Speaking...';
+  else if (state === 'thinking') status.textContent = 'Thinking...';
   else if (state === 'error') status.textContent = 'Connection failed. Tap End to close.';
   else status.textContent = '';
+
+  // Start/stop thinking tick sound
+  if (state === 'thinking') {
+    startThinkingTick();
+  } else {
+    stopThinkingTick();
+  }
+}
+
+function startThinkingTick() {
+  if (thinkingTickInterval) return;
+  if (!thinkingTickCtx) {
+    thinkingTickCtx = new AudioContext();
+  }
+  // Play a subtle tick every 600ms
+  function playTick() {
+    if (!thinkingTickCtx) return;
+    var osc = thinkingTickCtx.createOscillator();
+    var gain = thinkingTickCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = 880;
+    gain.gain.setValueAtTime(0.06, thinkingTickCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, thinkingTickCtx.currentTime + 0.08);
+    osc.connect(gain);
+    gain.connect(thinkingTickCtx.destination);
+    osc.start(thinkingTickCtx.currentTime);
+    osc.stop(thinkingTickCtx.currentTime + 0.08);
+  }
+  playTick();
+  thinkingTickInterval = setInterval(playTick, 600);
+}
+
+function stopThinkingTick() {
+  if (thinkingTickInterval) {
+    clearInterval(thinkingTickInterval);
+    thinkingTickInterval = null;
+  }
 }
 
 function toggleVoice() {
@@ -636,19 +676,30 @@ async function startVad() {
         liveSpeaking = true;
         devLog('', 'Voice: VAD speech start');
         var overlay = document.getElementById('voice-overlay');
-        if (overlay.getAttribute('data-state') === 'speaking') {
+        var state = overlay.getAttribute('data-state');
+        if (state === 'speaking') {
           devLog('', 'Voice: user speaking during playback, auto-interrupting');
           interruptLive();
+        } else if (state === 'thinking') {
+          // User started speaking again — cancel thinking state
+          setVoiceState('listening');
         }
       },
       onSpeechEnd: function () {
         liveSpeaking = false;
         devLog('', 'Voice: VAD speech end');
+        // Enter thinking state — waiting for Gemini to respond
+        var overlay = document.getElementById('voice-overlay');
+        var state = overlay.getAttribute('data-state');
+        if (state === 'listening') {
+          setVoiceState('thinking');
+        }
       },
       onFrameProcessed: function (probs) {
         // Drive orb reactivity from speech probability when listening
         var overlay = document.getElementById('voice-overlay');
-        if (overlay.getAttribute('data-state') !== 'listening') return;
+        var currentState = overlay.getAttribute('data-state');
+        if (currentState !== 'listening') return;
         var orb = document.querySelector('.voice-orb');
         if (!orb) return;
         var p = probs.isSpeech;
@@ -703,6 +754,11 @@ function queueAudioChunk(b64Data) {
 }
 
 function cleanupLiveResources() {
+  stopThinkingTick();
+  if (thinkingTickCtx) {
+    thinkingTickCtx.close().catch(function () { });
+    thinkingTickCtx = null;
+  }
   if (liveVad) {
     liveVad.pause();
     liveVad = null;
