@@ -440,6 +440,9 @@ var thinkingTickTimeout = null;  // timeout for next thinking tick sound
 var thinkingTickCtx = null;      // AudioContext for tick generation
 var thinkingStartTime = 0;       // timestamp for latency debugging
 var thinkingBailout = null;      // safety timeout to exit stuck thinking state
+var audioHoldBuffer = [];        // buffered PCM chunks waiting for speech confirmation
+var audioFlushTimeout = null;    // timer to flush held audio after confirmed end of speech
+var AUDIO_HOLD_DELAY = 1500;     // ms to wait after speechEnd before flushing to Gemini
 
 function setVoiceState(state) {
   var overlay = document.getElementById('voice-overlay');
@@ -603,24 +606,48 @@ async function startLiveSession() {
 function sendPcmToWs(pcmBuffer) {
   if (!liveWs || liveWs.readyState !== WebSocket.OPEN) return;
 
-  // Don't send mic data while Gemini is speaking — browser AEC can't
-  // fully remove TTS, so sending it would feed Gemini its own voice.
-  // Silero VAD handles interrupt detection separately via its own mic stream.
+  // Don't send mic data while Gemini is speaking
   var overlay = document.getElementById('voice-overlay');
   if (overlay.getAttribute('data-state') === 'speaking') return;
 
-  // Send mic data to Gemini only when not playing back TTS
-  var bytes = new Uint8Array(pcmBuffer);
-  var b64 = btoa(String.fromCharCode.apply(null, bytes));
+  // Buffer audio locally — it gets flushed to Gemini only after
+  // VAD confirms speech is truly done (no resume within AUDIO_HOLD_DELAY)
+  audioHoldBuffer.push(new Uint8Array(pcmBuffer));
+}
 
-  liveWs.send(JSON.stringify({
-    realtimeInput: {
-      mediaChunks: [{
-        mimeType: 'audio/pcm;rate=16000',
-        data: b64
-      }]
-    }
-  }));
+function flushAudioBuffer() {
+  if (!liveWs || liveWs.readyState !== WebSocket.OPEN) {
+    audioHoldBuffer = [];
+    return;
+  }
+  devLog('', 'Voice: flushing ' + audioHoldBuffer.length + ' buffered audio chunks to Gemini');
+  for (var i = 0; i < audioHoldBuffer.length; i++) {
+    var b64 = btoa(String.fromCharCode.apply(null, audioHoldBuffer[i]));
+    liveWs.send(JSON.stringify({
+      realtimeInput: {
+        mediaChunks: [{
+          mimeType: 'audio/pcm;rate=16000',
+          data: b64
+        }]
+      }
+    }));
+  }
+  audioHoldBuffer = [];
+}
+
+function cancelAudioFlush() {
+  if (audioFlushTimeout) {
+    clearTimeout(audioFlushTimeout);
+    audioFlushTimeout = null;
+  }
+}
+
+function scheduleAudioFlush() {
+  cancelAudioFlush();
+  audioFlushTimeout = setTimeout(function () {
+    audioFlushTimeout = null;
+    flushAudioBuffer();
+  }, AUDIO_HOLD_DELAY);
 }
 
 async function startMicCapture() {
@@ -702,6 +729,8 @@ async function startVad() {
         liveSpeaking = true;
         liveUserHasSpoken = true;
         devLog('', 'Voice: VAD speech start');
+        // User resumed speaking — cancel any pending flush so audio accumulates
+        cancelAudioFlush();
         var overlay = document.getElementById('voice-overlay');
         var state = overlay.getAttribute('data-state');
         if (state === 'speaking') {
@@ -721,8 +750,10 @@ async function startVad() {
       onSpeechEnd: function () {
         liveSpeaking = false;
         devLog('', 'Voice: VAD speech end');
-        // Only enter thinking if user has actually spoken (not spurious VAD on init)
         if (!liveUserHasSpoken) return;
+        // Schedule flush — if user speaks again within AUDIO_HOLD_DELAY,
+        // the flush is cancelled and audio keeps accumulating
+        scheduleAudioFlush();
         var overlay = document.getElementById('voice-overlay');
         if (overlay.getAttribute('data-state') === 'listening') {
           setVoiceState('thinking');
@@ -791,6 +822,8 @@ function cleanupLiveResources() {
     thinkingTickCtx.close().catch(function () { });
     thinkingTickCtx = null;
   }
+  cancelAudioFlush();
+  audioHoldBuffer = [];
   if (liveVad) {
     liveVad.pause();
     liveVad = null;
