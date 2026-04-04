@@ -435,6 +435,10 @@ var livePlaybackSources = [];    // active BufferSource nodes for granular stop
 var liveVad = null;              // Silero VAD instance for speech detection
 var liveSpeaking = false;        // true when VAD detects user is speaking
 var liveTurnCount = 0;           // number of completed Gemini turns (for AEC calibration)
+var liveUserHasSpoken = false;   // true after first real speech in this session
+var thinkingTickTimeout = null;  // timeout for next thinking tick sound
+var thinkingTickCtx = null;      // AudioContext for tick generation
+var thinkingStartTime = 0;       // timestamp for latency debugging
 
 function setVoiceState(state) {
   var overlay = document.getElementById('voice-overlay');
@@ -446,8 +450,52 @@ function setVoiceState(state) {
   if (state === 'connecting') status.textContent = 'Connecting...';
   else if (state === 'listening') status.textContent = 'Listening...';
   else if (state === 'speaking') status.textContent = 'Speaking...';
+  else if (state === 'thinking') status.textContent = 'Thinking...';
   else if (state === 'error') status.textContent = 'Connection failed. Tap End to close.';
   else status.textContent = '';
+
+  // Start/stop thinking tick sound + latency tracking
+  if (state === 'thinking') {
+    thinkingStartTime = performance.now();
+    startThinkingTick();
+  } else {
+    if (thinkingStartTime && (state === 'speaking' || state === 'listening')) {
+      var elapsed = (performance.now() - thinkingStartTime).toFixed(0);
+      devLog('', 'Voice: thinking → ' + state + ' in ' + elapsed + 'ms');
+      thinkingStartTime = 0;
+    }
+    stopThinkingTick();
+  }
+}
+
+function playTick() {
+  if (!thinkingTickCtx) return;
+  var osc = thinkingTickCtx.createOscillator();
+  var gain = thinkingTickCtx.createGain();
+  osc.type = 'sine';
+  osc.frequency.value = 880;
+  gain.gain.setValueAtTime(0.06, thinkingTickCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, thinkingTickCtx.currentTime + 0.08);
+  osc.connect(gain);
+  gain.connect(thinkingTickCtx.destination);
+  osc.start(thinkingTickCtx.currentTime);
+  osc.stop(thinkingTickCtx.currentTime + 0.08);
+}
+
+function startThinkingTick() {
+  if (thinkingTickTimeout) return;
+  if (!thinkingTickCtx) {
+    thinkingTickCtx = new AudioContext();
+  }
+  playTick();
+  thinkingTickTimeout = setInterval(playTick, 600);
+}
+
+function stopThinkingTick() {
+  if (thinkingTickTimeout) {
+    clearInterval(thinkingTickTimeout);
+    thinkingTickTimeout = null;
+  }
 }
 
 function toggleVoice() {
@@ -638,9 +686,11 @@ async function startVad() {
       },
       onSpeechStart: function () {
         liveSpeaking = true;
+        liveUserHasSpoken = true;
         devLog('', 'Voice: VAD speech start');
         var overlay = document.getElementById('voice-overlay');
-        if (overlay.getAttribute('data-state') === 'speaking') {
+        var state = overlay.getAttribute('data-state');
+        if (state === 'speaking') {
           // Skip auto-interruption on the first Gemini turn — AEC needs
           // one full response to calibrate the speaker-to-mic echo path
           if (liveTurnCount < 1) {
@@ -649,11 +699,20 @@ async function startVad() {
           }
           devLog('', 'Voice: user speaking during playback, auto-interrupting');
           interruptLive();
+        } else if (state === 'thinking') {
+          // User started speaking again — cancel thinking state
+          setVoiceState('listening');
         }
       },
       onSpeechEnd: function () {
         liveSpeaking = false;
         devLog('', 'Voice: VAD speech end');
+        // Only enter thinking if user has actually spoken (not spurious VAD on init)
+        if (!liveUserHasSpoken) return;
+        var overlay = document.getElementById('voice-overlay');
+        if (overlay.getAttribute('data-state') === 'listening') {
+          setVoiceState('thinking');
+        }
       },
       onFrameProcessed: function (probs) {
         // Drive orb reactivity from speech probability when listening
@@ -713,11 +772,17 @@ function queueAudioChunk(b64Data) {
 }
 
 function cleanupLiveResources() {
+  stopThinkingTick();
+  if (thinkingTickCtx) {
+    thinkingTickCtx.close().catch(function () { });
+    thinkingTickCtx = null;
+  }
   if (liveVad) {
     liveVad.pause();
     liveVad = null;
     liveSpeaking = false;
     liveTurnCount = 0;
+    liveUserHasSpoken = false;
   }
   if (liveMicStream) {
     liveMicStream.getTracks().forEach(function (t) { t.stop(); });
