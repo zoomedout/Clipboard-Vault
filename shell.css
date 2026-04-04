@@ -1,0 +1,229 @@
+/* ── Shared shell styles: nav, footer, body, light-mode override ── */
+:root {
+  --bg: #000000;
+  --bg-alt: rgba(10, 10, 10, 0.8);
+  --text: #e8e8ed;
+  --text-secondary: #a1a1a6;
+  --text-tertiary: #6e6e73;
+  --accent: #0071e3;
+  --accent-hover: #0077ed;
+  --green: #34c759;
+  --purple: #af52de;
+  --orange: #ff9500;
+  --teal: #5ac8fa;
+  --border: rgba(255, 255, 255, 0.1);
+  --card: rgba(10, 10, 10, 0.7);
+  --font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+#universe {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* ── Nav ── */
+nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 52px;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nav-inner {
+  max-width: 1024px;
+  width: 100%;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.nav-brand {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  color: #e8e8ed;
+  text-decoration: none;
+  letter-spacing: -0.3px;
+}
+
+.nav-links {
+  display: flex;
+  gap: 28px;
+  align-items: center;
+}
+
+.nav-links a {
+  font-size: 13px;
+  color: #a1a1a6;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.nav-links a:hover {
+  color: #e8e8ed;
+}
+
+.nav-links a.active {
+  color: #e8e8ed;
+  font-weight: 600;
+}
+
+.nav-cta {
+  background: var(--accent) !important;
+  color: white !important;
+  padding: 6px 16px;
+  border-radius: 980px;
+  font-size: 13px !important;
+  transition: opacity 0.2s !important;
+}
+
+.nav-cta:hover {
+  opacity: 0.85;
+}
+
+/* ── Main content area ── */
+#page-content {
+  position: relative;
+  z-index: 1;
+  min-height: 60vh;
+}
+
+/* ── Footer ── */
+footer {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 40px 24px;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+
+.footer-inner {
+  max-width: 1024px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.footer-copy {
+  font-size: 13px;
+  color: var(--text-tertiary);
+}
+
+.footer-links {
+  display: flex;
+  gap: 24px;
+}
+
+.footer-links a {
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.footer-links a:hover {
+  color: var(--text);
+}
+
+/* ── Fade-in animation ── */
+.fade-in {
+  opacity: 0;
+  transform: translateY(48px);
+  transition: opacity 1s cubic-bezier(0.25, 0.1, 0.25, 1), transform 1s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+.fade-in.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.fade-in:nth-child(2) { transition-delay: 0.1s; }
+.fade-in:nth-child(3) { transition-delay: 0.2s; }
+.fade-in:nth-child(4) { transition-delay: 0.3s; }
+.fade-in:nth-child(5) { transition-delay: 0.15s; }
+.fade-in:nth-child(6) { transition-delay: 0.25s; }
+
+/* ── Responsive (shared) ── */
+@media (max-width: 768px) {
+  .nav-links a:not(.nav-cta) {
+    display: none;
+  }
+
+  .footer-inner {
+    flex-direction: column;
+    gap: 16px;
+  }
+}
+
+/* ── Light mode override (privacy pages) ── */
+body.light-mode {
+  background: #fafafa;
+  color: #1d1d1f;
+}
+
+body.light-mode nav {
+  background: rgba(255, 255, 255, 0.72);
+  border-bottom: 1px solid #e5e5ea;
+}
+
+body.light-mode .nav-brand {
+  color: #1d1d1f;
+}
+
+body.light-mode .nav-links a {
+  color: #6e6e73;
+}
+
+body.light-mode .nav-links a:hover,
+body.light-mode .nav-links a.active {
+  color: #1d1d1f;
+}
+
+body.light-mode footer {
+  background: #fafafa;
+  border-top: 1px solid #e5e5ea;
+}
+
+body.light-mode .footer-copy {
+  color: #6e6e73;
+}
+
+body.light-mode .footer-links a {
+  color: #0071e3;
+}

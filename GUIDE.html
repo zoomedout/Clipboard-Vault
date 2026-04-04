@@ -10,7 +10,7 @@
   <link rel="icon" type="image/png" href="favicon.png">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link rel="stylesheet" href="universe-bg.css">
-  <link rel="stylesheet" href="guide.css">
+  <link rel="stylesheet" href="shell.css">
   <link rel="stylesheet" href="chat.css">
 </head>
 
@@ -21,297 +21,28 @@
   <!-- Nav -->
   <nav>
     <div class="nav-inner">
-      <a class="nav-brand" href="#">Clipboard Vault</a>
+      <a class="nav-brand" href="#home" data-route="home">Clipboard Vault</a>
       <div class="nav-links">
-        <a href="features.html">Features</a>
-        <a href="compare.html">Compare</a>
-        <a href="in-action.html">In Action</a>
-        <a href="support.html">Support</a>
+        <a href="#features" data-route="features">Features</a>
+        <a href="#compare" data-route="compare">Compare</a>
+        <a href="#in-action" data-route="in-action">In Action</a>
+        <a href="#support" data-route="support">Support</a>
         <a class="nav-cta" href="https://apps.apple.com/app/clipboard-vault/id6760243773" style="display:none;">Download</a>
       </div>
     </div>
   </nav>
 
-  <!-- Language Selector (hidden for now) -->
-  <div class="lang-bar" style="display:none;">
-    <label for="lang-picker">Language</label>
-    <select class="lang-select" id="lang-picker" onchange="setLang(this.value)">
-      <option value="en">English</option>
-      <option value="te">తెలుగు</option>
-    </select>
-  </div>
-
-  <!-- Hero -->
-  <section class="hero">
-    <div class="hero-badge">
-      <span class="dot"></span>
-      Post-Quantum Encrypted · Synced Everywhere
-    </div>
-    <h1>Everything you copy.<br><span class="gradient">Protected. Synced. Searchable.</span></h1>
-    <p class="hero-sub">Clipboard Vault saves every text, image, and file you copy — encrypted with post-quantum cryptography, indexed for instant search, and synced across your Mac, iPhone, and iPad.</p>
-    <div class="hero-ctas">
-      <a class="btn-primary" href="https://apps.apple.com/app/clipboard-vault/id6760243773" style="display:none;">
-        <svg viewBox="0 0 24 24">
-          <path
-            d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
-        </svg>
-        Download on the App Store
-      </a>
-      <a class="btn-secondary" href="features.html">Learn More</a>
-      <a class="btn-secondary" href="compare.html">Compare</a>
-      <a class="btn-secondary" href="in-action.html">See It In Action</a>
-    </div>
-
-    <!-- Multi-Device Showcase (replaced by platform cards below) -->
-    <div class="hero-preview fade-in" style="display:none;">
-      <div class="device-showcase">
-      </div>
-
-      <!-- Floating badges hidden for side-by-side layout -->
-      <div class="hero-float float-left" style="display:none;"></div>
-      <div class="hero-float float-right" style="display:none;"></div>
-    </div>
-  </section>
-
-  <!-- Platform Cards -->
-  <section class="platform-section">
-    <div class="platform-header">
-      <h2>Works everywhere. <span>On your Mac, iPhone, and iPad.</span></h2>
-    </div>
-    <div class="platform-cards">
-      <div class="platform-card dark-card fade-in">
-        <div class="pc-badge">Works on Mac</div>
-        <div class="pc-title">Built for your workflow.</div>
-        <div class="pc-subtitle">Floating menu bar utility. Copy in any app, find it instantly. Native Swift — fast and lightweight.</div>
-        <div class="pc-image">
-          <img src="mac.png" alt="Clipboard Vault on Mac">
-        </div>
-        <div class="pc-features">
-          <span class="pc-feature-pill">Menu Bar Utility</span>
-          <span class="pc-feature-pill">Touch ID</span>
-          <span class="pc-feature-pill">iCloud Sync</span>
-          <span class="pc-feature-pill">Instant Search</span>
-          <span class="pc-feature-pill">Pin & Notes</span>
-          <span class="pc-feature-pill">Smart Categories</span>
-          <span class="pc-feature-pill">Link Previews</span>
-          <span class="pc-feature-pill">Image Preview</span>
-          <span class="pc-feature-pill">File Capture</span>
-          <span class="pc-feature-pill">RTF Support</span>
-        </div>
-        <p class="pc-footer-text">Runs quietly in your menu bar. Zero impact on performance.</p>
-      </div>
-      <div class="platform-card fade-in">
-        <div class="pc-badge">Works on iPad</div>
-        <div class="pc-title">The big picture.</div>
-        <div class="pc-subtitle">Split view detail panel. Full clipboard history with notes, pins, and search. Synced from all your devices.</div>
-        <div class="pc-image">
-          <img src="ipad.png" alt="Clipboard Vault on iPad">
-        </div>
-        <div class="pc-features">
-          <span class="pc-feature-pill">Split View</span>
-          <span class="pc-feature-pill">Detail Panel</span>
-          <span class="pc-feature-pill">Notes & Pins</span>
-          <span class="pc-feature-pill">iCloud Sync</span>
-          <span class="pc-feature-pill">Link Previews</span>
-          <span class="pc-feature-pill">File Browser</span>
-          <span class="pc-feature-pill">Full-Text Search</span>
-          <span class="pc-feature-pill">Encrypted Storage</span>
-          <span class="pc-feature-pill">Share Extension</span>
-          <span class="pc-feature-pill">Face ID</span>
-        </div>
-        <p class="pc-footer-text">Your complete clipboard on the big screen.</p>
-      </div>
-      <div class="platform-card dark-card fade-in">
-        <div class="pc-badge">Works on iPhone</div>
-        <div class="pc-title">Always with you.</div>
-        <div class="pc-subtitle">Your full clipboard history in your pocket. Share Extension captures from any app. Face ID keeps it locked.</div>
-        <div class="pc-image">
-          <img src="iphone.png" alt="Clipboard Vault on iPhone">
-        </div>
-        <div class="pc-features">
-          <span class="pc-feature-pill">Face ID</span>
-          <span class="pc-feature-pill">Share Extension</span>
-          <span class="pc-feature-pill">iCloud Sync</span>
-          <span class="pc-feature-pill">Full-Text Search</span>
-          <span class="pc-feature-pill">Pin & Notes</span>
-          <span class="pc-feature-pill">Encrypted Storage</span>
-        </div>
-        <p class="pc-footer-text">Your clipboard history, always in your pocket.</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- Features -->
-  <section class="section-alt" id="features">
-    <div class="inner">
-      <p class="section-label">Features</p>
-      <h2 class="section-title fade-in">Everything you need.<br>Nothing you don't.</h2>
-      <p class="section-subtitle fade-in">A clipboard manager that's powerful enough for developers and simple enough
-        for everyone.</p>
-
-      <div class="features-grid">
-        <div class="feature-card fade-in">
-          <div class="feature-icon fi-blue">
-            <svg viewBox="0 0 24 24">
-              <path
-                d="M19 3H14.82C14.4 1.84 13.3 1 12 1S9.6 1.84 9.18 3H5C3.9 3 3 3.9 3 5v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm7 16H5V5h2v3h10V5h2v14z" />
-            </svg>
-          </div>
-          <h3>Automatic History</h3>
-          <p>Every text, image, and file you copy is automatically saved. Never lose a copy again.</p>
-        </div>
-        <div class="feature-card fade-in">
-          <div class="feature-icon fi-green">
-            <svg viewBox="0 0 24 24">
-              <path
-                d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z" />
-            </svg>
-          </div>
-          <h3>Post-Quantum Encryption</h3>
-          <p>Your data is protected with hybrid X25519 + ML-KEM-768 encryption — quantum-resistant and future-proof.</p>
-        </div>
-        <div class="feature-card fade-in">
-          <div class="feature-icon fi-teal">
-            <svg viewBox="0 0 24 24">
-              <path
-                d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z" />
-            </svg>
-          </div>
-          <h3>iCloud Sync</h3>
-          <p>Copy on your Mac, paste on your iPhone. Your encrypted clipboard syncs seamlessly across all your Apple devices.</p>
-        </div>
-        <div class="feature-card fade-in">
-          <div class="feature-icon fi-orange">
-            <svg viewBox="0 0 24 24">
-              <path
-                d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
-            </svg>
-          </div>
-          <h3>Instant Search</h3>
-          <p>Every clip is indexed the moment it's saved. Find anything by keyword in milliseconds — search index is encrypted too.</p>
-        </div>
-        <div class="feature-card fade-in">
-          <div class="feature-icon fi-purple">
-            <svg viewBox="0 0 24 24">
-              <path
-                d="M17.81 4.47c-.08 0-.16-.02-.23-.06C15.66 3.42 14 3 12.01 3c-1.98 0-3.86.47-5.57 1.41-.24.13-.54.04-.68-.2-.13-.24-.04-.55.2-.68C7.82 2.52 9.86 2 12.01 2c2.13 0 3.99.47 6.03 1.52.25.13.34.43.21.67-.09.18-.26.28-.44.28zM3.5 9.72c-.1 0-.2-.03-.29-.09-.23-.16-.28-.47-.12-.7.99-1.4 2.25-2.5 3.75-3.27C9.98 4.04 14 4.03 17.15 5.65c1.5.77 2.76 1.86 3.75 3.25.16.22.11.54-.12.7-.23.16-.54.11-.7-.12-.9-1.26-2.04-2.25-3.39-2.94-2.87-1.47-6.54-1.47-9.4.01-1.36.7-2.5 1.7-3.4 2.96-.08.14-.23.21-.39.21zm6.25 12.07c-.13 0-.26-.05-.35-.15-.87-.87-1.34-1.43-2.01-2.64-.69-1.23-1.05-2.73-1.05-4.34 0-2.97 2.54-5.39 5.66-5.39s5.66 2.42 5.66 5.39c0 .28-.22.5-.5.5s-.5-.22-.5-.5c0-2.42-2.09-4.39-4.66-4.39s-4.66 1.97-4.66 4.39c0 1.44.32 2.77.93 3.85.64 1.15 1.08 1.64 1.85 2.42.19.2.19.51 0 .71-.11.1-.24.15-.37.15z" />
-            </svg>
-          </div>
-          <h3>Touch ID & Face ID</h3>
-          <p>Your clipboard stays locked until you authenticate. Biometric security on every device.</p>
-        </div>
-        <div class="feature-card fade-in">
-          <div class="feature-icon fi-red">
-            <svg viewBox="0 0 24 24">
-              <path
-                d="M14 4v5c0 .55.45 1 1 1h5V20c0 .55-.45 1-1 1H5c-.55 0-1-.45-1-1V4c0-.55.45-1 1-1h8l1 1zm-2 11l-3.5-3.5 1.41-1.41L12 12.17l4.59-4.58L18 9l-6 6z" />
-            </svg>
-          </div>
-          <h3>Pin & Notes</h3>
-          <p>Pin important clips to the top. Attach searchable notes for extra context. All synced and encrypted.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Security -->
-  <section class="section-dark" id="security">
-    <div class="inner">
-      <p class="section-label" style="color: #2997ff;">Security</p>
-      <h2 class="section-title fade-in">Encrypted before it<br>touches the disk.</h2>
-      <p class="section-subtitle fade-in">Every clip is wrapped in hybrid post-quantum encryption. Even if someone
-        copies your database, they get nothing.</p>
-
-      <div class="encrypt-visual">
-        <div class="encrypt-left">
-          <div class="encrypt-step fade-in">
-            <div class="encrypt-num">1</div>
-            <div>
-              <h4>You copy something</h4>
-              <p>Clipboard Vault captures the content and immediately encrypts it with a fresh ephemeral key pair.</p>
-            </div>
-          </div>
-          <div class="encrypt-step fade-in">
-            <div class="encrypt-num">2</div>
-            <div>
-              <h4>Hybrid key exchange</h4>
-              <p>X25519 and ML-KEM-768 run in parallel. Their shared secrets are combined via HKDF to derive a unique
-                AES-256 key.</p>
-            </div>
-          </div>
-          <div class="encrypt-step fade-in">
-            <div class="encrypt-num">3</div>
-            <div>
-              <h4>AES-256-GCM seals it</h4>
-              <p>Content is authenticated-encrypted. The ciphertext, nonce, and ephemeral keys are stored. Plaintext is
-                never written.</p>
-            </div>
-          </div>
-          <div class="encrypt-step fade-in">
-            <div class="encrypt-num">4</div>
-            <div>
-              <h4>Touch ID or Face ID to decrypt</h4>
-              <p>Private keys live in the device Keychain. Only your fingerprint, face, or password can unlock them. Keys are zeroed
-                from memory on lock.</p>
-            </div>
-          </div>
-        </div>
-        <div class="encrypt-right fade-in">
-          <div class="token-visual">
-            <div class="tv-label">// What you copied</div>
-            <div class="tv-plain">ssh deploy@prod-server-01</div>
-            <div class="tv-arrow">↓</div>
-            <div class="tv-label">// What's stored on disk</div>
-            <div><span class="tv-prefix">v4:</span><span
-                class="tv-encrypted">kE9xQ2mP7nR3tY8wA5sD1fG4hJ6lZ0cV2bN9mK3qW7eR5tY8uI0oP4aS6dF1gH3jL7zX9cV2bN0mQ5wE8rT1yU4iO6pA3sD...</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="stats-row fade-in">
-        <div class="stat">
-          <div class="stat-num blue">256</div>
-          <div class="stat-label">bit AES-GCM</div>
-        </div>
-        <div class="stat">
-          <div class="stat-num green">768</div>
-          <div class="stat-label">ML-KEM Post-Quantum</div>
-        </div>
-        <div class="stat">
-          <div class="stat-num purple">E2E</div>
-          <div class="stat-label">End-to-End Encrypted Sync</div>
-        </div>
-        <div class="stat">
-          <div class="stat-num blue">0</div>
-          <div class="stat-label">Zero Knowledge — We Can't Read Your Data</div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- CTA -->
-  <section class="cta-section">
-    <h2 class="fade-in">Ready to never lose<br>a copy again?</h2>
-    <p class="fade-in">Available on Mac, iPhone, and iPad.</p>
-    <a class="btn-primary fade-in" href="https://apps.apple.com/app/clipboard-vault/id6760243773"
-      style="display: none;">
-      <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: white;">
-        <path
-          d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
-      </svg>
-      Download on the App Store
-    </a>
-  </section>
+  <!-- Page content swapped by router -->
+  <main id="page-content"></main>
 
   <!-- Footer -->
   <footer>
     <div class="footer-inner">
-      <div class="footer-copy">© 2026 Arjun Donthala. All rights reserved. · Mac · iPhone · iPad</div>
+      <div class="footer-copy">&copy; 2026 Arjun Donthala. All rights reserved. &middot; Mac &middot; iPhone &middot; iPad</div>
       <div class="footer-links">
-        <a href="privacy.html">Privacy Policy</a>
-        <a href="support.html">Support</a>
-        <a href="privacy-choices.html">Privacy Choices</a>
+        <a href="#privacy" data-route="privacy">Privacy Policy</a>
+        <a href="#support" data-route="support">Support</a>
+        <a href="#privacy-choices" data-route="privacy-choices">Privacy Choices</a>
       </div>
     </div>
   </footer>
@@ -402,6 +133,7 @@
   <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.14.0/dist/ort.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@ricky0123/vad-web@0.0.22/dist/bundle.min.js"></script>
   <script src="chat.js"></script>
+  <script src="router.js"></script>
 
 </body>
 
