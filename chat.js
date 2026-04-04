@@ -434,6 +434,7 @@ var liveConnected = false;
 var livePlaybackSources = [];    // active BufferSource nodes for granular stop
 var liveVad = null;              // Silero VAD instance for speech detection
 var liveSpeaking = false;        // true when VAD detects user is speaking
+var liveUserHasSpoken = false;   // true after first real speech in this session
 var thinkingTickTimeout = null;  // timeout for next thinking tick sound
 var thinkingTickCtx = null;      // AudioContext for tick generation
 var thinkingStartTime = 0;       // timestamp for latency debugging
@@ -713,6 +714,7 @@ async function startVad() {
       },
       onSpeechStart: function () {
         liveSpeaking = true;
+        liveUserHasSpoken = true;
         devLog('', 'Voice: VAD speech start');
         var overlay = document.getElementById('voice-overlay');
         var state = overlay.getAttribute('data-state');
@@ -727,7 +729,9 @@ async function startVad() {
       onSpeechEnd: function () {
         liveSpeaking = false;
         devLog('', 'Voice: VAD speech end');
-        // Enter thinking state — waiting for Gemini to respond
+        // Only enter thinking state if user has actually spoken in this session
+        // (VAD can fire spurious start/end on mic initialization)
+        if (!liveUserHasSpoken) return;
         var overlay = document.getElementById('voice-overlay');
         var state = overlay.getAttribute('data-state');
         if (state === 'listening') {
@@ -802,6 +806,7 @@ function cleanupLiveResources() {
     liveVad.pause();
     liveVad = null;
     liveSpeaking = false;
+    liveUserHasSpoken = false;
   }
   if (liveMicStream) {
     liveMicStream.getTracks().forEach(function (t) { t.stop(); });
