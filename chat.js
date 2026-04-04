@@ -589,7 +589,7 @@ async function startMicCapture() {
     } else {
       // Fallback: ScriptProcessorNode (main thread, deprecated)
       devLog('', 'Voice: AudioWorklet not supported, falling back to ScriptProcessor');
-      var processor = liveAudioCtx.createScriptProcessor(1024, 1, 1);
+      var processor = liveAudioCtx.createScriptProcessor(4096, 1, 1);
       processor.onaudioprocess = function (e) {
         var input = e.inputBuffer.getChannelData(0);
         var pcm16 = new Int16Array(input.length);
