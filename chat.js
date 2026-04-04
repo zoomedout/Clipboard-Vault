@@ -726,6 +726,10 @@ async function startVad() {
         var duration = performance.now() - liveSpeechStartTime;
         devLog('', 'Voice: VAD speech end (' + duration.toFixed(0) + 'ms)');
         if (!liveUserHasSpoken) return;
+        // Reset interrupted flag — user finished speaking, so any new
+        // Gemini audio chunks are a fresh response, not leftover from
+        // the interrupted turn
+        liveInterrupted = false;
         // Skip thinking for very short bursts (< 500ms) — likely a
         // stray word, cough, or calling someone's name, not a real query
         if (duration < MIN_SPEECH_DURATION) {
