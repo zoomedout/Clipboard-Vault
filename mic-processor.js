@@ -5,7 +5,7 @@ class MicProcessor extends AudioWorkletProcessor {
     super();
     this._buffer = [];
     this._bufferLen = 0;
-    this._chunkSize = 4096; // match the old ScriptProcessor buffer size
+    this._chunkSize = 1024; // ~64ms at 16kHz for low-latency sends
   }
 
   process(inputs) {
