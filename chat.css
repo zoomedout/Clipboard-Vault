@@ -307,7 +307,7 @@ body.te [lang="en"] {
 .voice-overlay {
   position: absolute;
   inset: 0;
-  background: var(--bg);
+  background: #000000;
   display: none;
   flex-direction: column;
   align-items: center;
