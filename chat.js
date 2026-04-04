@@ -434,6 +434,7 @@ var liveConnected = false;
 var livePlaybackSources = [];    // active BufferSource nodes for granular stop
 var liveVad = null;              // Silero VAD instance for speech detection
 var liveSpeaking = false;        // true when VAD detects user is speaking
+var liveTurnCount = 0;           // number of completed Gemini turns (for AEC calibration)
 
 function setVoiceState(state) {
   var overlay = document.getElementById('voice-overlay');
@@ -497,7 +498,8 @@ async function startLiveSession() {
           var sc = msg.serverContent;
 
           if (sc.turnComplete) {
-            devLog('', 'Voice: turn complete');
+            liveTurnCount++;
+            devLog('', 'Voice: turn complete (turn #' + liveTurnCount + ')');
             liveInterrupted = false;
             setVoiceState('listening');
             return;
@@ -627,6 +629,7 @@ async function startVad() {
     liveVad = await vad.MicVAD.new({
       baseAssetPath: 'https://cdn.jsdelivr.net/npm/@ricky0123/vad-web@0.0.22/dist/',
       onnxWASMBasePath: 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.14.0/dist/',
+      positiveSpeechThreshold: 0.7,
       additionalAudioConstraints: {
         echoCancellation: true,
         noiseSuppression: true,
@@ -637,6 +640,12 @@ async function startVad() {
         devLog('', 'Voice: VAD speech start');
         var overlay = document.getElementById('voice-overlay');
         if (overlay.getAttribute('data-state') === 'speaking') {
+          // Skip auto-interruption on the first Gemini turn — AEC needs
+          // one full response to calibrate the speaker-to-mic echo path
+          if (liveTurnCount < 1) {
+            devLog('', 'Voice: skipping auto-interrupt (AEC calibrating, turn #' + liveTurnCount + ')');
+            return;
+          }
           devLog('', 'Voice: user speaking during playback, auto-interrupting');
           interruptLive();
         }
@@ -707,6 +716,7 @@ function cleanupLiveResources() {
     liveVad.pause();
     liveVad = null;
     liveSpeaking = false;
+    liveTurnCount = 0;
   }
   if (liveMicStream) {
     liveMicStream.getTracks().forEach(function (t) { t.stop(); });
