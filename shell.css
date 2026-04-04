@@ -192,10 +192,80 @@ footer {
 .fade-in:nth-child(5) { transition-delay: 0.15s; }
 .fade-in:nth-child(6) { transition-delay: 0.25s; }
 
+/* ── Hamburger button (hidden on desktop) ── */
+.nav-hamburger {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.nav-hamburger span {
+  display: block;
+  width: 20px;
+  height: 2px;
+  background: #e8e8ed;
+  border-radius: 1px;
+  transition: transform 0.25s ease, opacity 0.25s ease;
+}
+
+.nav-hamburger.open span:nth-child(1) {
+  transform: translateY(7px) rotate(45deg);
+}
+
+.nav-hamburger.open span:nth-child(2) {
+  opacity: 0;
+}
+
+.nav-hamburger.open span:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg);
+}
+
 /* ── Responsive (shared) ── */
 @media (max-width: 768px) {
-  .nav-links a:not(.nav-cta) {
+  .nav-hamburger {
+    display: flex;
+  }
+
+  .nav-links {
     display: none;
+    position: absolute;
+    top: 52px;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.92);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    flex-direction: column;
+    padding: 16px 24px;
+    gap: 0;
+  }
+
+  .nav-links.mobile-open {
+    display: flex;
+  }
+
+  .nav-links a:not(.nav-cta) {
+    padding: 12px 0;
+    font-size: 15px;
+    border: none;
+    border-radius: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .nav-links a:not(.nav-cta).active {
+    border: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .nav-links .nav-cta {
+    margin-top: 12px;
+    text-align: center;
+    display: block;
   }
 
   .footer-inner {
@@ -240,4 +310,19 @@ body.light-mode .footer-copy {
 
 body.light-mode .footer-links a {
   color: #0071e3;
+}
+
+body.light-mode .nav-hamburger span {
+  background: #1d1d1f;
+}
+
+@media (max-width: 768px) {
+  body.light-mode .nav-links {
+    background: rgba(255, 255, 255, 0.92);
+    border-bottom: 1px solid #e5e5ea;
+  }
+
+  body.light-mode .nav-links a:not(.nav-cta) {
+    border-bottom: 1px solid #e5e5ea;
+  }
 }

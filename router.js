@@ -161,11 +161,29 @@
     currentRoute = route;
   }
 
+  // Mobile hamburger toggle
+  var hamburger = document.getElementById('nav-hamburger');
+  var navLinks = document.getElementById('nav-links');
+  if (hamburger && navLinks) {
+    hamburger.addEventListener('click', function () {
+      hamburger.classList.toggle('open');
+      navLinks.classList.toggle('mobile-open');
+    });
+  }
+
+  function closeMobileNav() {
+    if (hamburger && navLinks) {
+      hamburger.classList.remove('open');
+      navLinks.classList.remove('mobile-open');
+    }
+  }
+
   // Intercept clicks on data-route links
   document.addEventListener('click', function (e) {
     var link = e.target.closest('a[data-route]');
     if (!link) return;
     e.preventDefault();
+    closeMobileNav();
     var route = link.getAttribute('data-route');
     navigate(route);
   });
