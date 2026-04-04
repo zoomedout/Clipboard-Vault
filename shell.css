@@ -80,6 +80,11 @@ nav {
   letter-spacing: -0.3px;
 }
 
+/* Hide Home link when on home page */
+.nav-home.active {
+  display: none !important;
+}
+
 .nav-links {
   display: flex;
   gap: 28px;
