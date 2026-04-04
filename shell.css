@@ -91,9 +91,10 @@ nav {
   color: #a1a1a6;
   text-decoration: none;
   font-weight: 500;
-  transition: color 0.2s, border-color 0.2s, padding 0.2s;
+  transition: color 0.25s ease, border-color 0.25s ease, background 0.25s ease;
   border: 1px solid transparent;
-  padding: 5px 0;
+  padding: 5px 14px;
+  border-radius: 980px;
 }
 
 .nav-links a:not(.nav-cta):hover {
@@ -103,9 +104,7 @@ nav {
 .nav-links a:not(.nav-cta).active {
   color: #ffffff;
   font-weight: 600;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  padding: 5px 14px;
-  border-radius: 980px;
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
 .nav-cta {
