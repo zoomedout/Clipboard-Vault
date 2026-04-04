@@ -35,7 +35,7 @@ nav {
   color: #e8e8ed !important;
 }
 
-.nav-links a {
+.nav-links a:not(.nav-cta) {
   color: #a1a1a6 !important;
 }
 
