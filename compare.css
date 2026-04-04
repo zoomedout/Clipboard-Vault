@@ -1,0 +1,69 @@
+/* compare.css — Page-specific styles for compare.html */
+
+:root {
+  --bg: #000000;
+  --bg-alt: rgba(10,10,10,0.8);
+  --bg-dark: #000000;
+  --text: #e8e8ed;
+  --text-secondary: #c8c8cd;
+  --text-tertiary: #8e8e93;
+  --accent: #0071e3;
+  --accent-hover: #0077ed;
+  --green: #34c759;
+  --red: #ff3b30;
+  --orange: #ff9500;
+  --border: rgba(255,255,255,0.1);
+  --card: #0a0a0a;
+  --font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+}
+
+/* Hero */
+.hero { text-align: center; padding: 80px 24px 40px; position: relative; z-index: 1; }
+.hero h1 { font-family: var(--font-display); font-size: 48px; font-weight: 700; letter-spacing: -1.5px; line-height: 1.1; }
+.hero .gradient { background: linear-gradient(135deg, var(--accent), #af52de); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.hero-sub { font-size: 18px; color: var(--text-secondary); max-width: 600px; margin: 16px auto 0; line-height: 1.5; }
+
+/* Table */
+.compare-section { max-width: 1100px; margin: 0 auto; padding: 0 24px 80px; position: relative; z-index: 1; }
+.compare-wrapper { background: #0a0a0a; border: 1px solid rgba(255,255,255,0.15); border-radius: 16px; overflow: hidden; }
+.compare-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.compare-table thead th { background: #0a0a0a; padding: 16px 12px; text-align: center; font-size: 13px; font-weight: 600; border-bottom: 2px solid rgba(255,255,255,0.1); }
+.compare-table thead th:first-child { text-align: left; }
+.compare-table thead th.highlight { color: #ffffff; }
+.compare-table tbody td { padding: 12px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.06); vertical-align: middle; }
+.compare-table tbody td:first-child { text-align: left; font-weight: 500; color: var(--text); }
+.compare-table tbody tr:hover { background: rgba(255,255,255,0.04); }
+.compare-table .category-row td { background: rgba(255,255,255,0.03); font-weight: 900 !important; font-size: 14px; text-transform: uppercase; letter-spacing: 1.5px; color: #ffffff; padding: 16px 12px; border-bottom: 1px solid rgba(255,255,255,0.1); text-align: center !important; }
+
+.check { color: #ffffff; font-size: 18px; font-weight: 700; }
+.cross { color: #ff6b6b; font-size: 16px; font-weight: 700; }
+.partial { color: var(--orange); font-size: 14px; }
+.detail { font-size: 12px; color: var(--text-secondary); display: block; margin-top: 2px; }
+
+.app-logo { width: 32px; height: 32px; border-radius: 8px; margin-bottom: 4px; }
+.app-name { display: block; font-size: 12px; }
+.app-price { display: block; font-size: 11px; color: var(--text-tertiary); margin-top: 2px; }
+
+/* Highlight column */
+.compare-table td.hl, .compare-table th.hl { background: rgba(255, 255, 255, 0.04); }
+.compare-table th.hl { background: rgba(255, 255, 255, 0.04); }
+
+/* CTA */
+.cta-section { text-align: center; padding: 60px 24px 80px; position: relative; z-index: 1; }
+.cta-section h2 { font-family: var(--font-display); font-size: 32px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 8px; }
+.cta-section p { color: var(--text-secondary); margin-bottom: 24px; }
+.cta-btn { display: inline-block; background: var(--accent); color: #fff; padding: 14px 32px; border-radius: 980px; text-decoration: none; font-weight: 600; font-size: 15px; transition: background 0.2s; }
+.cta-btn:hover { background: var(--accent-hover); }
+
+/* Responsive */
+@media (max-width: 900px) {
+  .compare-table { font-size: 12px; }
+  .compare-table thead th, .compare-table tbody td { padding: 8px 6px; }
+  .hero h1 { font-size: 32px; }
+}
+
+@media (max-width: 600px) {
+  .compare-wrapper { overflow-x: auto; }
+  .compare-table { min-width: 700px; }
+}
