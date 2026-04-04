@@ -123,7 +123,7 @@
     // Fade out old content (skip on initial load)
     if (currentRoute) {
       main.classList.add('page-exit');
-      await new Promise(function (r) { setTimeout(r, 150); });
+      await new Promise(function (r) { setTimeout(r, 250); });
       unloadPageCSS(currentRoute);
     }
 

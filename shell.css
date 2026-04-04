@@ -91,7 +91,9 @@ nav {
   color: #a1a1a6;
   text-decoration: none;
   font-weight: 500;
-  transition: color 0.2s;
+  transition: color 0.2s, border-color 0.2s, padding 0.2s, font-weight 0.2s;
+  border: 1px solid transparent;
+  padding: 5px 0;
 }
 
 .nav-links a:hover {
@@ -125,7 +127,7 @@ nav {
   z-index: 1;
   min-height: 60vh;
   opacity: 1;
-  transition: opacity 0.15s ease-out;
+  transition: opacity 0.25s ease-in-out;
 }
 
 #page-content.page-exit {
@@ -215,13 +217,14 @@ body.light-mode .nav-brand {
   color: #1d1d1f;
 }
 
-body.light-mode .nav-links a {
+body.light-mode .nav-links a:not(.nav-cta) {
   color: #6e6e73;
 }
 
-body.light-mode .nav-links a:hover,
-body.light-mode .nav-links a.active {
+body.light-mode .nav-links a:not(.nav-cta):hover,
+body.light-mode .nav-links a:not(.nav-cta).active {
   color: #1d1d1f;
+  border-color: rgba(0, 0, 0, 0.2);
 }
 
 body.light-mode footer {
