@@ -436,6 +436,8 @@ var liveVad = null;              // Silero VAD instance for speech detection
 var liveSpeaking = false;        // true when VAD detects user is speaking
 var liveTurnCount = 0;           // number of completed Gemini turns (for AEC calibration)
 var liveUserHasSpoken = false;   // true after first real speech in this session
+var liveSpeechStartTime = 0;     // timestamp when current speech started
+var MIN_SPEECH_DURATION = 500;   // minimum ms of speech to trigger thinking state
 var thinkingTickTimeout = null;  // timeout for next thinking tick sound
 var thinkingTickCtx = null;      // AudioContext for tick generation
 var thinkingStartTime = 0;       // timestamp for latency debugging
@@ -701,6 +703,7 @@ async function startVad() {
       onSpeechStart: function () {
         liveSpeaking = true;
         liveUserHasSpoken = true;
+        liveSpeechStartTime = performance.now();
         devLog('', 'Voice: VAD speech start');
         var overlay = document.getElementById('voice-overlay');
         var state = overlay.getAttribute('data-state');
@@ -720,9 +723,15 @@ async function startVad() {
       },
       onSpeechEnd: function () {
         liveSpeaking = false;
-        devLog('', 'Voice: VAD speech end');
-        // Only enter thinking if user has actually spoken (not spurious VAD on init)
+        var duration = performance.now() - liveSpeechStartTime;
+        devLog('', 'Voice: VAD speech end (' + duration.toFixed(0) + 'ms)');
         if (!liveUserHasSpoken) return;
+        // Skip thinking for very short bursts (< 500ms) — likely a
+        // stray word, cough, or calling someone's name, not a real query
+        if (duration < MIN_SPEECH_DURATION) {
+          devLog('', 'Voice: speech too short (' + duration.toFixed(0) + 'ms), staying in listening');
+          return;
+        }
         var overlay = document.getElementById('voice-overlay');
         if (overlay.getAttribute('data-state') === 'listening') {
           setVoiceState('thinking');
