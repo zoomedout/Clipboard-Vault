@@ -86,21 +86,21 @@ nav {
   align-items: center;
 }
 
-.nav-links a {
+.nav-links a:not(.nav-cta) {
   font-size: 13px;
   color: #a1a1a6;
   text-decoration: none;
   font-weight: 500;
-  transition: color 0.2s, border-color 0.2s, padding 0.2s, font-weight 0.2s;
+  transition: color 0.2s, border-color 0.2s, padding 0.2s;
   border: 1px solid transparent;
   padding: 5px 0;
 }
 
-.nav-links a:hover {
+.nav-links a:not(.nav-cta):hover {
   color: #e8e8ed;
 }
 
-.nav-links a.active {
+.nav-links a:not(.nav-cta).active {
   color: #ffffff;
   font-weight: 600;
   border: 1px solid rgba(255, 255, 255, 0.3);
@@ -111,9 +111,12 @@ nav {
 .nav-cta {
   background: var(--accent) !important;
   color: white !important;
-  padding: 6px 16px;
+  padding: 6px 16px !important;
+  border: none !important;
   border-radius: 980px;
   font-size: 13px !important;
+  font-weight: 500;
+  text-decoration: none;
   transition: opacity 0.2s !important;
 }
 
