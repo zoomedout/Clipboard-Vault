@@ -459,15 +459,15 @@ function setVoiceState(state) {
   if (state === 'thinking') {
     thinkingStartTime = performance.now();
     startThinkingTick();
-    // Safety: exit thinking if Gemini never responds within 10s
+    // Safety: exit thinking if Gemini never responds within 7s
     if (thinkingBailout) clearTimeout(thinkingBailout);
     thinkingBailout = setTimeout(function () {
       var overlay = document.getElementById('voice-overlay');
       if (overlay.getAttribute('data-state') === 'thinking') {
-        devLog('', 'Voice: thinking bailout after 10s, returning to listening');
+        devLog('', 'Voice: thinking bailout after 7s, returning to listening');
         setVoiceState('listening');
       }
-    }, 10000);
+    }, 7000);
   } else {
     if (thinkingBailout) {
       clearTimeout(thinkingBailout);
