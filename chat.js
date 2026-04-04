@@ -439,6 +439,7 @@ var liveUserHasSpoken = false;   // true after first real speech in this session
 var thinkingTickTimeout = null;  // timeout for next thinking tick sound
 var thinkingTickCtx = null;      // AudioContext for tick generation
 var thinkingStartTime = 0;       // timestamp for latency debugging
+var thinkingBailout = null;      // safety timeout to exit stuck thinking state
 
 function setVoiceState(state) {
   var overlay = document.getElementById('voice-overlay');
@@ -454,11 +455,24 @@ function setVoiceState(state) {
   else if (state === 'error') status.textContent = 'Connection failed. Tap End to close.';
   else status.textContent = '';
 
-  // Start/stop thinking tick sound + latency tracking
+  // Start/stop thinking tick sound + latency tracking + bailout timer
   if (state === 'thinking') {
     thinkingStartTime = performance.now();
     startThinkingTick();
+    // Safety: exit thinking if Gemini never responds within 10s
+    if (thinkingBailout) clearTimeout(thinkingBailout);
+    thinkingBailout = setTimeout(function () {
+      var overlay = document.getElementById('voice-overlay');
+      if (overlay.getAttribute('data-state') === 'thinking') {
+        devLog('', 'Voice: thinking bailout after 10s, returning to listening');
+        setVoiceState('listening');
+      }
+    }, 10000);
   } else {
+    if (thinkingBailout) {
+      clearTimeout(thinkingBailout);
+      thinkingBailout = null;
+    }
     if (thinkingStartTime && (state === 'speaking' || state === 'listening')) {
       var elapsed = (performance.now() - thinkingStartTime).toFixed(0);
       devLog('', 'Voice: thinking → ' + state + ' in ' + elapsed + 'ms');
