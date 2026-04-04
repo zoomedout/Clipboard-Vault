@@ -101,12 +101,7 @@
     var main = document.getElementById('page-content');
     if (!main) return;
 
-    // Unload previous page CSS
-    if (currentRoute) {
-      unloadPageCSS(currentRoute);
-    }
-
-    // Fetch content (with cache)
+    // Fetch content first (before animation, so swap is instant)
     var html;
     if (PAGE_CACHE[route]) {
       html = PAGE_CACHE[route];
@@ -123,6 +118,13 @@
         main.textContent = 'Failed to load page: ' + e.message;
         return;
       }
+    }
+
+    // Fade out old content (skip on initial load)
+    if (currentRoute) {
+      main.classList.add('page-exit');
+      await new Promise(function (r) { setTimeout(r, 150); });
+      unloadPageCSS(currentRoute);
     }
 
     // Swap content — trusted first-party HTML fragments only
@@ -147,6 +149,11 @@
 
     // Scroll to top
     window.scrollTo(0, 0);
+
+    // Fade in new content
+    // Force reflow so the transition triggers
+    void main.offsetHeight;
+    main.classList.remove('page-exit');
 
     // Re-run fade-in animations
     rerunFadeIn();

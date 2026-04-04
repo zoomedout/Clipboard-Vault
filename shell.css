@@ -124,6 +124,12 @@ nav {
   position: relative;
   z-index: 1;
   min-height: 60vh;
+  opacity: 1;
+  transition: opacity 0.15s ease-out;
+}
+
+#page-content.page-exit {
+  opacity: 0;
 }
 
 /* ── Footer ── */
