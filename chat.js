@@ -434,10 +434,8 @@ var liveConnected = false;
 var livePlaybackSources = [];    // active BufferSource nodes for granular stop
 var liveVad = null;              // Silero VAD instance for speech detection
 var liveSpeaking = false;        // true when VAD detects user is speaking
-var liveUserHasSpoken = false;   // true after first real speech in this session
-var thinkingTickTimeout = null;  // timeout for next thinking tick sound
+var thinkingTickInterval = null; // interval for thinking tick sound
 var thinkingTickCtx = null;      // AudioContext for tick generation
-var thinkingStartTime = 0;       // timestamp for latency debugging
 
 function setVoiceState(state) {
   var overlay = document.getElementById('voice-overlay');
@@ -453,78 +451,41 @@ function setVoiceState(state) {
   else if (state === 'error') status.textContent = 'Connection failed. Tap End to close.';
   else status.textContent = '';
 
-  // Start/stop thinking tick sound + latency tracking
+  // Start/stop thinking tick sound
   if (state === 'thinking') {
-    thinkingStartTime = performance.now();
     startThinkingTick();
   } else {
-    if (thinkingStartTime && (state === 'speaking' || state === 'listening')) {
-      var elapsed = (performance.now() - thinkingStartTime).toFixed(0);
-      devLog('', 'Voice: thinking → ' + state + ' in ' + elapsed + 'ms');
-      thinkingStartTime = 0;
-    }
     stopThinkingTick();
   }
 }
 
-function playWoodTap() {
-  if (!thinkingTickCtx) return;
-  var ctx = thinkingTickCtx;
-  var t = ctx.currentTime;
-
-  // Noise burst shaped to sound like a soft wooden tap
-  var bufLen = Math.floor(ctx.sampleRate * 0.04); // 40ms
-  var noiseBuf = ctx.createBuffer(1, bufLen, ctx.sampleRate);
-  var data = noiseBuf.getChannelData(0);
-  for (var i = 0; i < bufLen; i++) {
-    data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufLen * 0.08));
-  }
-
-  var noise = ctx.createBufferSource();
-  noise.buffer = noiseBuf;
-
-  // Bandpass filter to give it a woody tone
-  var bp = ctx.createBiquadFilter();
-  bp.type = 'bandpass';
-  bp.frequency.value = 800 + Math.random() * 400; // vary pitch slightly
-  bp.Q.value = 2;
-
-  var gain = ctx.createGain();
-  gain.gain.setValueAtTime(0.12, t);
-  gain.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
-
-  noise.connect(bp);
-  bp.connect(gain);
-  gain.connect(ctx.destination);
-  noise.start(t);
-  noise.stop(t + 0.04);
-}
-
-function scheduleNextTick() {
-  if (!thinkingTickTimeout && thinkingTickTimeout !== 0) return;
-  // Wavy timing: varies between 300ms and 700ms
-  var delay = 300 + Math.random() * 400;
-  thinkingTickTimeout = setTimeout(function () {
-    if (thinkingTickTimeout === null) return;
-    playWoodTap();
-    scheduleNextTick();
-  }, delay);
-}
-
 function startThinkingTick() {
-  if (thinkingTickTimeout) return;
+  if (thinkingTickInterval) return;
   if (!thinkingTickCtx) {
     thinkingTickCtx = new AudioContext();
   }
-  thinkingTickTimeout = 0; // sentinel to indicate active
-  playWoodTap();
-  scheduleNextTick();
+  // Play a subtle tick every 600ms
+  function playTick() {
+    if (!thinkingTickCtx) return;
+    var osc = thinkingTickCtx.createOscillator();
+    var gain = thinkingTickCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = 880;
+    gain.gain.setValueAtTime(0.06, thinkingTickCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, thinkingTickCtx.currentTime + 0.08);
+    osc.connect(gain);
+    gain.connect(thinkingTickCtx.destination);
+    osc.start(thinkingTickCtx.currentTime);
+    osc.stop(thinkingTickCtx.currentTime + 0.08);
+  }
+  playTick();
+  thinkingTickInterval = setInterval(playTick, 600);
 }
 
 function stopThinkingTick() {
-  if (thinkingTickTimeout !== null) {
-    clearTimeout(thinkingTickTimeout);
-    thinkingTickTimeout = null;
+  if (thinkingTickInterval) {
+    clearInterval(thinkingTickInterval);
+    thinkingTickInterval = null;
   }
 }
 
@@ -706,7 +667,6 @@ async function startVad() {
     liveVad = await vad.MicVAD.new({
       baseAssetPath: 'https://cdn.jsdelivr.net/npm/@ricky0123/vad-web@0.0.22/dist/',
       onnxWASMBasePath: 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.14.0/dist/',
-      redemptionFrames: 12,
       additionalAudioConstraints: {
         echoCancellation: true,
         noiseSuppression: true,
@@ -714,7 +674,6 @@ async function startVad() {
       },
       onSpeechStart: function () {
         liveSpeaking = true;
-        liveUserHasSpoken = true;
         devLog('', 'Voice: VAD speech start');
         var overlay = document.getElementById('voice-overlay');
         var state = overlay.getAttribute('data-state');
@@ -729,9 +688,7 @@ async function startVad() {
       onSpeechEnd: function () {
         liveSpeaking = false;
         devLog('', 'Voice: VAD speech end');
-        // Only enter thinking state if user has actually spoken in this session
-        // (VAD can fire spurious start/end on mic initialization)
-        if (!liveUserHasSpoken) return;
+        // Enter thinking state — waiting for Gemini to respond
         var overlay = document.getElementById('voice-overlay');
         var state = overlay.getAttribute('data-state');
         if (state === 'listening') {
@@ -806,7 +763,6 @@ function cleanupLiveResources() {
     liveVad.pause();
     liveVad = null;
     liveSpeaking = false;
-    liveUserHasSpoken = false;
   }
   if (liveMicStream) {
     liveMicStream.getTracks().forEach(function (t) { t.stop(); });
