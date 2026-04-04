@@ -607,9 +607,10 @@ function sendPcmToWs(pcmBuffer) {
 
   // Don't send mic data while Gemini is speaking — browser AEC can't
   // fully remove TTS, so sending it would feed Gemini its own voice.
-  // Silero VAD handles interrupt detection separately via its own mic stream.
+  // Exception: if we've already interrupted (playback stopped), send
+  // immediately so Gemini hears the follow-up question.
   var overlay = document.getElementById('voice-overlay');
-  if (overlay.getAttribute('data-state') === 'speaking') return;
+  if (overlay.getAttribute('data-state') === 'speaking' && !liveInterrupted) return;
 
   // Send mic data to Gemini only when not playing back TTS
   var bytes = new Uint8Array(pcmBuffer);
