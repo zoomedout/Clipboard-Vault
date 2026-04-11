@@ -109,17 +109,18 @@
       temps: [],
     };
     // Spawn temporary particles inside the activation cone. These
-    // live/die with the region and provide the actual *density* of
-    // the lit-up area — not fakery via size boosts on existing nodes.
-    var tempCount = 95 + Math.floor(Math.random() * 65);  // 95–160
+    // are the ONLY visible indication of a region — main sphere
+    // particles are untouched. Count and brightness both high so
+    // the hot spot reads as genuine new density, not thickening.
+    var tempCount = 220 + Math.floor(Math.random() * 160);  // 220–380
     for (var i = 0; i < tempCount; i++) {
-      var pos = sampleInCone(d.nx, d.ny, d.nz, 0.80);
+      var pos = sampleInCone(d.nx, d.ny, d.nz, 0.78);
       region.temps.push({
         nx: pos.nx, ny: pos.ny, nz: pos.nz,
-        r0: 0.97 + Math.random() * 0.09,     // hugging the shell
+        r0: 0.92 + Math.random() * 0.14,     // 0.92–1.06 — 3D volume, not a flat decal
         ph: Math.random() * Math.PI * 2,
         sp: 0.70 + Math.random() * 0.50,
-        br: 0.80 + Math.random() * 0.35,
+        br: 0.95 + Math.random() * 0.40,
       });
     }
     regions.push(region);
@@ -333,7 +334,7 @@
     var rad = baseRadius * (1 + smoothExpand + breath);
 
     var turb = 0.055 + smoothTurb;
-    var brightness = 0.55 + smoothEnergy * 0.50;
+    var brightness = 0.42 + smoothEnergy * 0.58;
 
     // ── Render ──────────────────────────────────────────────
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -353,34 +354,14 @@
     for (var i = 0; i < N; i++) {
       var p = pts[i];
 
-      // ── Region influence ────────────────────────────────
-      // Regions are primarily LUMINOSITY patches, not gravity wells.
-      // Particles stay near home; they glow when inside a region.
-      // A small tangential nudge creates subtle densification without
-      // ripping the sphere apart.
-      var pullX = 0, pullY = 0, pullZ = 0;
-      var maxStrength = 0;
-      for (var r = 0; r < regions.length; r++) {
-        var reg = regions[r];
-        if (reg.weight < 0.01) continue;
-        var dotR = p.nx * reg.nx + p.ny * reg.ny + p.nz * reg.nz;
-        if (dotR > 0.70) {
-          var t = (dotR - 0.70) / 0.27;
-          if (t > 1) t = 1;
-          t = t * t * (3 - 2 * t);          // smoothstep falloff — tight hotspot
-          var strength = t * reg.weight;
-          if (strength > maxStrength) maxStrength = strength;
-          // Gentle pull — subtle densification, not clump formation
-          pullX += (reg.nx - p.nx) * strength * 0.18;
-          pullY += (reg.ny - p.ny) * strength * 0.18;
-          pullZ += (reg.nz - p.nz) * strength * 0.18;
-        }
-      }
-
-      // ── Directional wobble + region pull ────────────────
-      var dx = Math.sin(time * 0.55 * p.sp1 + p.ph1) * turb + pullX;
-      var dy = Math.sin(time * 0.67 * p.sp2 + p.ph2) * turb + pullY;
-      var dz = Math.sin(time * 0.49 * p.sp1 + p.ph3) * turb + pullZ;
+      // Main sphere particles get ZERO region influence — no pull, no
+      // brightness boost, no size boost. Regions are expressed entirely
+      // via the temp-particle pass below, which spawns fresh nodes inside
+      // the activation cone. Only the collective totalRegW drives a
+      // gentle outward dispersal here as the equal-reaction balance.
+      var dx = Math.sin(time * 0.55 * p.sp1 + p.ph1) * turb;
+      var dy = Math.sin(time * 0.67 * p.sp2 + p.ph2) * turb;
+      var dz = Math.sin(time * 0.49 * p.sp1 + p.ph3) * turb;
 
       var nx = p.nx + dx;
       var ny = p.ny + dy;
@@ -389,20 +370,9 @@
       if (L < 0.01) continue;
       nx /= L; ny /= L; nz /= L;
 
-      // ── Radial modulation ───────────────────────────────
-      // Subtle. Active particles pop outward a tiny bit (barely past
-      // the shell). Inactive particles disperse almost imperceptibly
-      // in proportion to total region activity — the reaction is
-      // present but doesn't drain the sphere.
+      // Radial pulse + subtle dispersal proportional to total region weight
       var radialPulse = Math.sin(time * 1.15 * p.sp2 + p.ph1) * 0.055 * (1 + smoothTurb);
-      var radialMod;
-      if (maxStrength > 0.05) {
-        radialMod = maxStrength * 0.06;
-      } else if (totalRegW > 0.1) {
-        radialMod = Math.min(totalRegW, 2) * 0.025;
-      } else {
-        radialMod = 0;
-      }
+      var radialMod = totalRegW > 0.1 ? Math.min(totalRegW, 2) * 0.025 : 0;
       var rLocal = p.r0 + radialPulse + radialMod;
 
       // ── Project (rotate Y, drop Z for depth) ────────────
@@ -421,17 +391,11 @@
       else if (p.layer === 1) { sizeBase = 0.30; layerMul = 0.92; }  // shell
       else                    { sizeBase = 0.27; layerMul = 0.58; }  // wispy
 
-      // Region boost — brightness is now the PRIMARY tell that a region
-      // is active. Lit particles get much brighter + visibly fatter
-      // while staying in their home positions.
-      var regionBright = 1 + maxStrength * 2.8;
-      var regionSize = 1 + maxStrength * 1.4;
-
-      var alpha = (0.08 + depth * 0.42) * p.br * brightness * layerMul * regionBright;
+      var alpha = (0.08 + depth * 0.42) * p.br * brightness * layerMul;
       if (alpha < 0.018) continue;
       if (alpha > 0.98) alpha = 0.98;
 
-      var size = (sizeBase + depth * 0.42) * regionSize * dpr;
+      var size = (sizeBase + depth * 0.42) * dpr;
 
       ctx.fillStyle = 'rgba(' + rgbStr + ',' + alpha.toFixed(3) + ')';
       ctx.beginPath();
@@ -475,11 +439,11 @@
         var tsy = cy + ty1 * trLocal * rad;
         var tdepth = (tz1 + 1) * 0.5;
 
-        var talpha = rw * tp.br * (0.22 + tdepth * 0.65) * brightness;
+        var talpha = rw * tp.br * (0.30 + tdepth * 0.72) * brightness;
         if (talpha < 0.02) continue;
         if (talpha > 0.98) talpha = 0.98;
 
-        var tsize = (0.34 + tdepth * 0.48) * dpr;
+        var tsize = (0.38 + tdepth * 0.54) * dpr;
 
         ctx.fillStyle = 'rgba(' + rgbStr + ',' + talpha.toFixed(3) + ')';
         ctx.beginPath();
