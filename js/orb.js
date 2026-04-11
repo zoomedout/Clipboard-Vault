@@ -71,11 +71,10 @@
     raf = requestAnimationFrame(tick);
     time += 0.016;
 
-    // Very slow easing — everything feels unhurried
-    voiceLevel    = lerp(voiceLevel,    targetVoice,   0.032);
-    smoothExpand  = lerp(smoothExpand,  targetExpand,  0.020);
-    smoothMicro   = lerp(smoothMicro,   targetMicro,   0.025);
-    smoothBreathe = lerp(smoothBreathe, targetBreathe, 0.018);
+    voiceLevel    = lerp(voiceLevel,    targetVoice,   0.12);  // responsive to voice
+    smoothExpand  = lerp(smoothExpand,  targetExpand,  0.08);  // expansion follows quickly
+    smoothMicro   = lerp(smoothMicro,   targetMicro,   0.025); // slow — organic feel
+    smoothBreathe = lerp(smoothBreathe, targetBreathe, 0.018); // slow — organic feel
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
