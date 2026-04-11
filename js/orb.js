@@ -64,18 +64,65 @@
 
   function lerp(a, b, t) { return a + (b - a) * t; }
 
+  // Sample a direction within a cone around (dx,dy,dz). Uses a
+  // center-biased distribution: particles cluster denser near the
+  // cone axis, thinning toward the edge. minCos controls cone width
+  // (minCos=0.80 ≈ ~37° half-angle).
+  function sampleInCone(dx, dy, dz, minCos) {
+    // Orthonormal basis around D
+    var ax, ay, az;
+    if (Math.abs(dx) < 0.9) { ax = 1; ay = 0; az = 0; }
+    else                    { ax = 0; ay = 1; az = 0; }
+    var e1x = dy * az - dz * ay;
+    var e1y = dz * ax - dx * az;
+    var e1z = dx * ay - dy * ax;
+    var L1 = Math.sqrt(e1x * e1x + e1y * e1y + e1z * e1z);
+    e1x /= L1; e1y /= L1; e1z /= L1;
+    var e2x = dy * e1z - dz * e1y;
+    var e2y = dz * e1x - dx * e1z;
+    var e2z = dx * e1y - dy * e1x;
+
+    // Bias cosφ toward 1 (cluster near center) via power distribution
+    var u = Math.random();
+    var cosPhi = minCos + (1 - minCos) * Math.pow(u, 0.45);
+    var sinPhi = Math.sqrt(Math.max(0, 1 - cosPhi * cosPhi));
+    var psi = Math.random() * Math.PI * 2;
+    var cp = Math.cos(psi), sp = Math.sin(psi);
+    return {
+      nx: cosPhi * dx + sinPhi * (cp * e1x + sp * e2x),
+      ny: cosPhi * dy + sinPhi * (cp * e1y + sp * e2y),
+      nz: cosPhi * dz + sinPhi * (cp * e1z + sp * e2z),
+    };
+  }
+
   // ── Regions lifecycle ─────────────────────────────────────
   function spawnRegion() {
     if (regions.length >= MAX_REGIONS) return;
     var d = randDir();
-    regions.push({
+    var region = {
       nx: d.nx, ny: d.ny, nz: d.nz,
       age: 0,
       weight: 0,
       fadeIn: 0.14 + Math.random() * 0.10,   // 0.14–0.24s
       hold: 0.80 + Math.random() * 0.80,     // 0.80–1.60s
       fadeOut: 0.45 + Math.random() * 0.30,  // 0.45–0.75s
-    });
+      temps: [],
+    };
+    // Spawn temporary particles inside the activation cone. These
+    // live/die with the region and provide the actual *density* of
+    // the lit-up area — not fakery via size boosts on existing nodes.
+    var tempCount = 95 + Math.floor(Math.random() * 65);  // 95–160
+    for (var i = 0; i < tempCount; i++) {
+      var pos = sampleInCone(d.nx, d.ny, d.nz, 0.80);
+      region.temps.push({
+        nx: pos.nx, ny: pos.ny, nz: pos.nz,
+        r0: 0.97 + Math.random() * 0.09,     // hugging the shell
+        ph: Math.random() * Math.PI * 2,
+        sp: 0.70 + Math.random() * 0.50,
+        br: 0.80 + Math.random() * 0.35,
+      });
+    }
+    regions.push(region);
   }
 
   function updateRegions(dt) {
@@ -390,6 +437,55 @@
       ctx.beginPath();
       ctx.arc(sx, sy, size, 0, Math.PI * 2);
       ctx.fill();
+    }
+
+    // ── Temporary activation particles ───────────────────────
+    // Each active region spawned ~95–160 temp particles inside its
+    // cone. They stack additively on top of the already-brightened
+    // main nodes, giving the hot spot genuine density (not fakery
+    // via size boosts). Alpha scales with region.weight so they
+    // fade in/out in sync with the region's lifecycle.
+    for (var r = 0; r < regions.length; r++) {
+      var reg = regions[r];
+      var rw = reg.weight;
+      if (rw < 0.01) continue;
+      var temps = reg.temps;
+      for (var ti = 0; ti < temps.length; ti++) {
+        var tp = temps[ti];
+
+        // Micro-wobble so they're not statues
+        var twx = Math.sin(time * 0.85 * tp.sp + tp.ph) * turb * 0.55;
+        var twy = Math.sin(time * 0.97 * tp.sp + tp.ph + 1.1) * turb * 0.55;
+        var twz = Math.sin(time * 0.73 * tp.sp + tp.ph + 2.3) * turb * 0.55;
+
+        var tnx = tp.nx + twx;
+        var tny = tp.ny + twy;
+        var tnz = tp.nz + twz;
+        var tL = Math.sqrt(tnx * tnx + tny * tny + tnz * tnz);
+        if (tL < 0.01) continue;
+        tnx /= tL; tny /= tL; tnz /= tL;
+
+        var trLocal = tp.r0 + Math.sin(time * 1.4 * tp.sp + tp.ph) * 0.025;
+
+        var tx1 = tnx * cY + tnz * sY;
+        var tz1 = -tnx * sY + tnz * cY;
+        var ty1 = tny;
+
+        var tsx = cx + tx1 * trLocal * rad;
+        var tsy = cy + ty1 * trLocal * rad;
+        var tdepth = (tz1 + 1) * 0.5;
+
+        var talpha = rw * tp.br * (0.22 + tdepth * 0.65) * brightness;
+        if (talpha < 0.02) continue;
+        if (talpha > 0.98) talpha = 0.98;
+
+        var tsize = (0.34 + tdepth * 0.48) * dpr;
+
+        ctx.fillStyle = 'rgba(' + rgbStr + ',' + talpha.toFixed(3) + ')';
+        ctx.beginPath();
+        ctx.arc(tsx, tsy, tsize, 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
 
     ctx.globalCompositeOperation = 'source-over';
