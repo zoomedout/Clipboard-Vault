@@ -40,8 +40,8 @@
   var N = 3800;
   var pts = [];
 
-  // Pale cyan-white base
-  var R = 170, G = 218, B = 255;
+  // Pale lavender-purple base
+  var R = 205, G = 170, B = 255;
   var curR = R, curG = G, curB = B;
 
   // ── Activation regions ────────────────────────────────────
@@ -271,7 +271,7 @@
         targetTurb = 0.17;
         targetBreathe = 0.022;
         targetEnergy = 0.48;
-        tR = 150; tG = 175; tB = 255;
+        tR = 160; tG = 120; tB = 255;
         break;
 
       case 'error':
