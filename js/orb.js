@@ -143,23 +143,39 @@
     // Sort back-to-front
     proj.sort(function (a, b) { return a.z - b.z; });
 
-    // ── Clip to circle — no square escape ─────────────────────
+    // ── Layer 1: Outer atmosphere — always on, expands with rad ──
+    // Sits outside the clip so it bleeds softly beyond the particle sphere
+    var atmR = rad * 1.55;
+    var atmA = 0.07 + breathOffset * 0.3 + voiceLevel * 0.06;
+    var atm = ctx.createRadialGradient(cx, cy, rad * 0.4, cx, cy, atmR);
+    atm.addColorStop(0,   'rgba(60,100,255,' + Math.min(0.18, atmA).toFixed(2) + ')');
+    atm.addColorStop(0.5, 'rgba(40,70,220,0.04)');
+    atm.addColorStop(1,   'rgba(20,40,180,0)');
+    ctx.beginPath();
+    ctx.arc(cx, cy, atmR, 0, Math.PI * 2);
+    ctx.fillStyle = atm;
+    ctx.fill();
+
+    // ── Clip to circle — particles stay spherical ─────────────
     ctx.save();
     ctx.beginPath();
     ctx.arc(cx, cy, rad * 1.15, 0, Math.PI * 2);
     ctx.clip();
 
-    // ── Central glow ──────────────────────────────────────────
-    var glowA = 0.05 + voiceLevel * 0.07;
-    var grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, rad * 0.75);
-    grd.addColorStop(0, 'rgba(' + r + ',' + g + ',' + b + ',' + glowA.toFixed(2) + ')');
-    grd.addColorStop(1, 'rgba(' + r + ',' + g + ',' + b + ',0)');
+    // ── Layer 2: Core glow — blue, voice-reactive ─────────────
+    // Dim blue ember at rest, blazes when speaking
+    var coreA  = 0.08 + voiceLevel * 0.38;
+    var coreR  = rad * (0.45 + voiceLevel * 0.25);
+    var core = ctx.createRadialGradient(cx, cy, 0, cx, cy, coreR);
+    core.addColorStop(0,   'rgba(80,140,255,' + Math.min(0.55, coreA).toFixed(2) + ')');
+    core.addColorStop(0.4, 'rgba(50,100,240,' + (coreA * 0.4).toFixed(2) + ')');
+    core.addColorStop(1,   'rgba(30,60,200,0)');
     ctx.beginPath();
-    ctx.arc(cx, cy, rad * 0.75, 0, Math.PI * 2);
-    ctx.fillStyle = grd;
+    ctx.arc(cx, cy, coreR, 0, Math.PI * 2);
+    ctx.fillStyle = core;
     ctx.fill();
 
-    // ── Draw dots ─────────────────────────────────────────────
+    // ── Layer 3: Particles (white dots) ───────────────────────
     for (var j = 0; j < N; j++) {
       var pt = proj[j];
       var depth = (pt.z + 1.3) / 2.6;                     // 0..1
