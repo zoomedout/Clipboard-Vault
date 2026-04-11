@@ -37,11 +37,11 @@
   var rotY = 0;
   var ROT_SPEED = 0.11;
 
-  var N = 6000;
+  var N = 4000;
   var pts = [];
 
   // Pale lavender-purple base
-  var R = 255, G = 255, B = 255;
+  var R = 0, G = 255, B = 255;
   var curR = R, curG = G, curB = B;
 
   // ── Activation regions ────────────────────────────────────
@@ -102,8 +102,8 @@
   // region's direction; at render time we transform each canonical
   // position into world space with a cheap 3×3 multiply. No per-spawn
   // allocation, no sampleInCone() calls during playback.
-  var TEMPLATE_COUNT = 20;
-  var TEMP_COUNT = 2500;
+  var TEMPLATE_COUNT = 15;
+  var TEMP_COUNT = 1000;
   var templates = [];
 
   function buildTemplates() {
@@ -121,8 +121,8 @@
           // gradient from the orb surface outward so the extension
           // reads as "orb leaking/extending" rather than a detached
           // cluster with a gap.
-          rPeak: 1.2 + Math.random() * 0.55,   // 1.08–1.63 — continuous gradient
-          rRest: 1.00 + Math.random() * 0.07,   // 1.00–1.07 — settle on shell
+          rPeak: 1 + Math.random() * 0.55,   // 1.08–1.63 — continuous gradient
+          rRest: 1.08 + Math.random() * 0.07,   // 1.00–1.07 — settle on shell
           ph: Math.random() * Math.PI * 2,
           sp: 0.70 + Math.random() * 0.50,
           br: 0.55 + Math.random() * 0.50,
