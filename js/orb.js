@@ -19,6 +19,26 @@
   var orbState = 'idle';
   var raf = null;
 
+  // ── Neural activation regions ─────────────────────────────
+  var activeRegions = [];       // [{nx,ny,nz}, ...] — 2-3 points on unit sphere
+  var nextRegionSwap = 0;       // time to next region snap
+  var REGION_SWAP_INTERVAL = 0.5;
+  var REGION_COUNT = 2;
+
+  function randomSpherePoint() {
+    var u = Math.random() * 2 - 1;
+    var phi = Math.random() * Math.PI * 2;
+    var r = Math.sqrt(1 - u * u);
+    return { nx: r * Math.cos(phi), ny: r * Math.sin(phi), nz: u };
+  }
+
+  function snapRegions() {
+    var count = REGION_COUNT + (Math.random() < 0.35 ? 1 : 0); // occasionally 3
+    activeRegions = [];
+    for (var i = 0; i < count; i++) activeRegions.push(randomSpherePoint());
+    nextRegionSwap = time + REGION_SWAP_INTERVAL;
+  }
+
   var N = 2500;
   var pts = [];
 
@@ -125,23 +145,47 @@
     var breathOffset = smoothBreathe * Math.sin(time * 0.45);
     var rad = baseRadius * (1 + smoothExpand + breathOffset);
 
+    // ── Neural region swap — fires on any speech, VAD-gated upstream ──
+    var isSpeaking = voiceLevel > 0.05;
+    if (isSpeaking && time > nextRegionSwap) snapRegions();
+    if (!isSpeaking) activeRegions = [];
+
     // ── Project points ────────────────────────────────────────
     var proj = new Array(N);
     for (var i = 0; i < N; i++) {
       var p = pts[i];
 
-      // Individual mind: each particle wanders freely in world-space x/y/z
-      // Two overlapping sine waves at irrational ratio per axis → smooth,
-      // never-repeating, unique path for every particle
       var d = smoothMicro * rad;
       var ox = d * (0.62 * Math.sin(time * 0.53 * p.s1 + p.p1) + 0.38 * Math.cos(time * 1.17 * p.s2 + p.p2));
       var oy = d * (0.62 * Math.sin(time * 0.71 * p.s2 + p.p2) + 0.38 * Math.cos(time * 0.89 * p.s1 + p.p3));
       var oz = d * (0.62 * Math.sin(time * 0.61 * p.s1 + p.p3) + 0.38 * Math.cos(time * 1.33 * p.s2 + p.p1));
 
+      // ── Region attraction + scatter ───────────────────────
+      if (activeRegions.length > 0) {
+        for (var ri = 0; ri < activeRegions.length; ri++) {
+          var reg = activeRegions[ri];
+          var dot = p.nx * reg.nx + p.ny * reg.ny + p.nz * reg.nz;
+
+          if (dot > 0.72) {
+            // Inside region — pull toward region centre (crowding)
+            var pull = ((dot - 0.72) / 0.28) * 0.45 * rad;
+            ox += (reg.nx - p.nx) * pull;
+            oy += (reg.ny - p.ny) * pull;
+            oz += (reg.nz - p.nz) * pull;
+          } else if (dot > 0.52) {
+            // Annular halo just outside — scatter away
+            var scatter = ((dot - 0.52) / 0.20) * 0.18 * rad;
+            ox -= (reg.nx - p.nx) * scatter;
+            oy -= (reg.ny - p.ny) * scatter;
+            oz -= (reg.nz - p.nz) * scatter;
+          }
+        }
+      }
+
       proj[i] = {
         sx: cx + p.nx * rad + ox,
         sy: cy + p.ny * rad + oy,
-        z: p.nz + oz / rad,  // normalised depth (-1..1) for size/opacity
+        z: p.nz + oz / rad,
         h: p.h
       };
     }
@@ -185,6 +229,41 @@
     ctx.arc(cx, cy, coreR, 0, Math.PI * 2);
     ctx.fillStyle = core;
     ctx.fill();
+
+    // ── Layer 2b: Neural region glows + subtle core connections ──
+    for (var ri = 0; ri < activeRegions.length; ri++) {
+      var reg = activeRegions[ri];
+      var rsx = cx + reg.nx * rad;
+      var rsy = cy + reg.ny * rad;
+
+      // Subtle diffuse trail from core toward region (not a line — a soft smear)
+      var trail = ctx.createRadialGradient(cx, cy, 0, cx, cy, rad * 0.95);
+      var trailAngleX = (rsx - cx) / rad;
+      var trailAngleY = (rsy - cy) / rad;
+      // Bias the gradient toward the region using an offset inner focal point
+      trail = ctx.createRadialGradient(
+        cx + trailAngleX * rad * 0.2, cy + trailAngleY * rad * 0.2, 0,
+        cx, cy, rad
+      );
+      trail.addColorStop(0,    'rgba(80,140,255,0.10)');
+      trail.addColorStop(0.6,  'rgba(60,110,240,0.03)');
+      trail.addColorStop(1,    'rgba(40,80,220,0)');
+      ctx.beginPath();
+      ctx.arc(cx, cy, rad, 0, Math.PI * 2);
+      ctx.fillStyle = trail;
+      ctx.fill();
+
+      // Bright glow spot at the region surface
+      var spotR = rad * 0.22;
+      var spot = ctx.createRadialGradient(rsx, rsy, 0, rsx, rsy, spotR);
+      spot.addColorStop(0,   'rgba(140,200,255,0.45)');
+      spot.addColorStop(0.4, 'rgba(80,150,255,0.18)');
+      spot.addColorStop(1,   'rgba(40,80,220,0)');
+      ctx.beginPath();
+      ctx.arc(rsx, rsy, spotR, 0, Math.PI * 2);
+      ctx.fillStyle = spot;
+      ctx.fill();
+    }
 
     // ── Layer 3: Particles ────────────────────────────────────
     var useStateColor = (orbState === 'thinking' || orbState === 'error');
