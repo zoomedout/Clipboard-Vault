@@ -1,3 +1,6 @@
+/* ── Mock voice mode (set true to test orb UI without Gemini) ── */
+var MOCK_VOICE = true;
+
 /* ── Scroll fade-in observer ── */
 var observer = new IntersectionObserver(function (entries) {
   entries.forEach(function (e) {
@@ -446,10 +449,8 @@ var thinkingBailout = null;      // safety timeout to exit stuck thinking state
 function setVoiceState(state) {
   var overlay = document.getElementById('voice-overlay');
   var status = document.getElementById('voice-status');
-  // Reset inline orb styles so CSS animations can take over
-  var orb = document.querySelector('.voice-orb');
-  if (orb) { orb.style.transform = ''; orb.style.boxShadow = ''; }
   overlay.setAttribute('data-state', state);
+  if (window.orbSetState) orbSetState(state);
   if (state === 'connecting') status.textContent = 'Connecting...';
   else if (state === 'listening') status.textContent = 'Listening...';
   else if (state === 'speaking') status.textContent = 'Speaking...';
@@ -514,12 +515,26 @@ function stopThinkingTick() {
   }
 }
 
+var mockVoiceTimeout = null;
+
 function toggleVoice() {
   var overlay = document.getElementById('voice-overlay');
   if (overlay.classList.contains('active')) {
-    endLiveSession();
+    if (MOCK_VOICE) {
+      cleanupLiveResources();
+      overlay.classList.remove('active');
+      setVoiceState('idle');
+    } else {
+      endLiveSession();
+    }
   } else {
-    startLiveSession();
+    if (MOCK_VOICE) {
+      overlay.classList.add('active');
+      setVoiceState('connecting');
+      startMicCapture();
+    } else {
+      startLiveSession();
+    }
   }
 }
 
@@ -738,21 +753,12 @@ async function startVad() {
           return;
         }
         var overlay = document.getElementById('voice-overlay');
-        if (overlay.getAttribute('data-state') === 'listening') {
+        if (!MOCK_VOICE && overlay.getAttribute('data-state') === 'listening') {
           setVoiceState('thinking');
         }
       },
       onFrameProcessed: function (probs) {
-        // Drive orb reactivity from speech probability when listening
-        var overlay = document.getElementById('voice-overlay');
-        if (overlay.getAttribute('data-state') !== 'listening') return;
-        var orb = document.querySelector('.voice-orb');
-        if (!orb) return;
-        var p = probs.isSpeech;
-        var scale = 1 + p * 0.35;
-        var glow = p * 50;
-        orb.style.transform = 'scale(' + scale.toFixed(3) + ')';
-        orb.style.boxShadow = '0 0 ' + glow.toFixed(0) + 'px rgba(0, 113, 227, ' + (0.3 + p * 0.5).toFixed(2) + ')';
+        if (window.orbSetVoice) orbSetVoice(probs.isSpeech);
       }
     });
     liveVad.start();

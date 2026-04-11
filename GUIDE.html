@@ -63,8 +63,7 @@
     <!-- Voice Mode Overlay (covers chat panel) -->
     <div class="voice-overlay" id="voice-overlay" data-state="idle">
       <div class="voice-orb-wrap">
-        <div class="voice-orb"></div>
-        <div class="voice-orb-ring"></div>
+        <canvas id="voice-orb-canvas"></canvas>
       </div>
       <div class="voice-status" id="voice-status">Connecting...</div>
       <div class="voice-btn-row">
@@ -133,6 +132,7 @@
     </div>
   </div>
 
+  <script src="js/orb.js"></script>
   <script src="js/universe-bg.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.14.0/dist/ort.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@ricky0123/vad-web@0.0.22/dist/bundle.min.js"></script>
