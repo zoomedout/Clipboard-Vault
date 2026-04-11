@@ -197,5 +197,28 @@
   // Initial load
   var initialRoute = getRouteFromHash();
   history.replaceState({ route: initialRoute }, '', '#' + initialRoute);
-  navigate(initialRoute, false);
+  navigate(initialRoute, false).then(function () {
+    // Prefetch all other routes in the background after initial page is ready
+    var allRoutes = Object.keys(CSS_MAP);
+    allRoutes.forEach(function (route) {
+      if (route === initialRoute) return;
+      // Prefetch HTML fragment
+      fetch('html/' + route + '.html').then(function (r) {
+        return r.ok ? r.text() : null;
+      }).then(function (html) {
+        if (html) PAGE_CACHE[route] = html;
+      }).catch(function () {});
+      // Preload CSS (disabled until needed)
+      var cssFile = CSS_MAP[route];
+      if (cssFile && !PAGE_CSS[route]) {
+        var link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = cssFile;
+        link.setAttribute('data-page', route);
+        link.disabled = true;
+        document.head.appendChild(link);
+        PAGE_CSS[route] = link;
+      }
+    });
+  });
 })();
