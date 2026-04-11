@@ -169,8 +169,10 @@
     if (state === 'idle') {
       if (raf) { cancelAnimationFrame(raf); raf = null; }
       if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
-    } else if (!raf) {
-      tick();
+    } else {
+      // Re-measure now that the overlay is visible (was display:none at init)
+      resize();
+      if (!raf) tick();
     }
   };
 
