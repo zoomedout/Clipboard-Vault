@@ -9,11 +9,17 @@
   var canvas, ctx, dpr, cx, cy, baseRadius;
   var rotY = 0, rotX = 0.38;
   var time = 0;
-  var voiceLevel = 0, targetVoice = 0;
+
+  // All voice-reactive values smoothed independently
+  var voiceLevel = 0, targetVoice = 0;  // 0..1 from VAD
+  var smoothScale = 1, targetScale = 1;
+  var smoothWave = 0.04, targetWave = 0.04;
+  var smoothSpeed = 1.0, targetSpeed = 1.0;
+
   var orbState = 'idle';
   var raf = null;
 
-  var N = 1600;
+  var N = 3500;
   var pts = [];
 
   function init() {
@@ -51,61 +57,72 @@
     canvas.style.height = h + 'px';
     cx = canvas.width / 2;
     cy = canvas.height / 2;
-    baseRadius = Math.min(w, h) * 0.36 * dpr;
+    // Leave room so even at max voice scale (1.3x) dots never leave the canvas
+    baseRadius = Math.min(w, h) * 0.28 * dpr;
   }
+
+  function lerp(a, b, t) { return a + (b - a) * t; }
 
   function tick() {
     raf = requestAnimationFrame(tick);
     time += 0.016;
 
-    // Smooth voice reactivity
-    voiceLevel += (targetVoice - voiceLevel) * 0.1;
+    // Smooth all target values — slow easing for organic feel
+    voiceLevel = lerp(voiceLevel, targetVoice, 0.06);
+    smoothScale = lerp(smoothScale, targetScale, 0.04);
+    smoothWave  = lerp(smoothWave,  targetWave,  0.05);
+    smoothSpeed = lerp(smoothSpeed, targetSpeed, 0.05);
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // ── State parameters ──────────────────────────────────────
-    var scale = 1;
-    var wAmp = 0.06, wFreq = 3.5, wSpeed = 1.2;
+    // ── State parameters → set targets, not values ─────────
     var rotSpd = 0.004;
-    var r = 91, g = 138, b = 255; // blue
+    var wFreq  = 3.0;
+    var r = 100, g = 130, b = 255;
 
     switch (orbState) {
       case 'connecting':
-        scale = 0.80 + 0.14 * (0.5 + 0.5 * Math.sin(time * 2.2));
-        wAmp = 0.06; wSpeed = 0.7; rotSpd = 0.003;
+        targetScale = 0.82 + 0.12 * (0.5 + 0.5 * Math.sin(time * 2.0));
+        targetWave  = 0.04;
+        targetSpeed = 0.6;
+        rotSpd = 0.003;
         break;
 
       case 'listening':
-        scale = 1.0 + voiceLevel * 0.38;
-        wAmp = 0.04 + voiceLevel * 0.32;
-        wSpeed = 1.2 + voiceLevel * 3.5;
-        wFreq = 3.5 + voiceLevel * 1.5;
-        rotSpd = 0.005 + voiceLevel * 0.006;
+        targetScale = 1.0 + voiceLevel * 0.28;
+        targetWave  = 0.03 + voiceLevel * 0.14;
+        targetSpeed = 0.9 + voiceLevel * 1.8;
+        rotSpd = 0.004 + voiceLevel * 0.003;
         break;
 
       case 'speaking':
-        scale = 1.14 + 0.07 * Math.sin(time * 5.5);
-        wAmp = 0.24; wSpeed = 4.5; wFreq = 4.5;
-        rotSpd = 0.010;
+        targetScale = 1.12 + 0.05 * Math.sin(time * 4.0);
+        targetWave  = 0.14;
+        targetSpeed = 2.8;
+        rotSpd = 0.007;
         break;
 
       case 'thinking':
-        scale = 0.90 + 0.07 * Math.sin(time * 1.4);
-        wAmp = 0.06; wSpeed = 0.8; rotSpd = 0.003;
-        r = 100; g = 90; b = 220; // shift toward indigo
+        targetScale = 0.92 + 0.05 * Math.sin(time * 1.2);
+        targetWave  = 0.04;
+        targetSpeed = 0.7;
+        rotSpd = 0.002;
+        r = 100; g = 90; b = 220;
         break;
 
       case 'error':
-        scale = 0.86 + 0.04 * Math.sin(time * 3);
-        wAmp = 0.04; rotSpd = 0.002;
+        targetScale = 0.88;
+        targetWave  = 0.03;
+        targetSpeed = 0.5;
+        rotSpd = 0.002;
         r = 255; g = 59; b = 48;
         break;
     }
 
     rotY += rotSpd;
-    rotX = 0.36 + 0.07 * Math.sin(time * 0.35);
+    rotX = 0.35 + 0.06 * Math.sin(time * 0.3);
 
-    var rad = baseRadius * scale;
+    var rad = baseRadius * smoothScale;
     var cosY = Math.cos(rotY), sinY = Math.sin(rotY);
     var cosX = Math.cos(rotX), sinX = Math.sin(rotX);
 
@@ -114,53 +131,62 @@
     for (var i = 0; i < N; i++) {
       var p = pts[i];
 
-      // Three-wave surface displacement for organic texture
-      var wave = wAmp * (
-        Math.sin(p.theta * wFreq + time * wSpeed) *
-        Math.cos(p.phi * 2.8 + time * wSpeed * 0.55) +
-        0.3 * Math.sin(p.theta * wFreq * 2 + time * wSpeed * 1.7 + p.phi)
+      // Layered wave displacement — multiple frequencies for organic flow
+      var wave = smoothWave * (
+        Math.sin(p.theta * wFreq       + time * smoothSpeed) *
+        Math.cos(p.phi   * 2.2         + time * smoothSpeed * 0.5) +
+        0.4 * Math.sin(p.theta * wFreq * 1.7 + time * smoothSpeed * 1.3 + p.phi * 0.8)
       );
       var rr = 1 + wave;
 
       var nx = p.nx * rr, ny = p.ny * rr, nz = p.nz * rr;
 
-      // Rotate Y
+      // Rotate Y axis
       var x1 = nx * cosY + nz * sinY;
       var z1 = -nx * sinY + nz * cosY;
 
-      // Rotate X
+      // Rotate X axis (slight tilt)
       var y2 = ny * cosX - z1 * sinX;
       var z2 = ny * sinX + z1 * cosX;
 
       proj[i] = { sx: cx + x1 * rad, sy: cy + y2 * rad, z: z2 };
     }
 
-    // Sort back-to-front for correct depth
+    // Sort back-to-front for correct depth layering
     proj.sort(function (a, b) { return a.z - b.z; });
 
-    // ── Draw central glow (behind dots) ───────────────────────
-    var glowSize = rad * 0.65;
-    var glowAlpha = 0.07 + voiceLevel * 0.1;
-    var grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, glowSize);
-    grd.addColorStop(0, 'rgba(' + r + ',' + g + ',' + b + ',' + glowAlpha.toFixed(2) + ')');
+    // ── Clip to circle so dots never escape into a square ─────
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, rad * 1.18, 0, Math.PI * 2);
+    ctx.clip();
+
+    // ── Central glow ──────────────────────────────────────────
+    var glowR = rad * 0.7;
+    var glowA = 0.06 + voiceLevel * 0.08;
+    var grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, glowR);
+    grd.addColorStop(0, 'rgba(' + r + ',' + g + ',' + b + ',' + glowA.toFixed(2) + ')');
     grd.addColorStop(1, 'rgba(' + r + ',' + g + ',' + b + ',0)');
     ctx.beginPath();
-    ctx.arc(cx, cy, glowSize, 0, Math.PI * 2);
+    ctx.arc(cx, cy, glowR, 0, Math.PI * 2);
     ctx.fillStyle = grd;
     ctx.fill();
 
-    // ── Draw dots ─────────────────────────────────────────────
+    // ── Draw dots — tiny for iOS fine-grain look ───────────────
     for (var j = 0; j < N; j++) {
       var pt = proj[j];
-      var depth = (pt.z + 1.35) / 2.7;          // normalise to 0..1
-      var dotSize = (0.45 + depth * 1.3) * dpr;
-      var alpha = Math.max(0, 0.08 + depth * 0.92);
+      var depth = (pt.z + 1.3) / 2.6;              // 0..1 front-to-back
+      var edgeFade = 1 - Math.pow(Math.max(0, depth - 0.5) * 2, 1.5); // fade outer ring
+      var dotSize = (0.22 + depth * 0.55) * dpr;   // tiny dots, size by depth
+      var alpha = Math.max(0, (0.06 + depth * 0.88) * (0.4 + edgeFade * 0.6));
 
       ctx.beginPath();
       ctx.arc(pt.sx, pt.sy, dotSize, 0, Math.PI * 2);
       ctx.fillStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + alpha.toFixed(2) + ')';
       ctx.fill();
     }
+
+    ctx.restore();
   }
 
   // ── Public API ────────────────────────────────────────────
