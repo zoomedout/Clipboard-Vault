@@ -76,7 +76,7 @@
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // ── State parameters → set targets, not values ─────────
-    var rotSpd = 0.004;
+    var rotSpd = 0.0006;
     var wFreq  = 3.0;
     var r = 255, g = 255, b = 255;
 
@@ -85,7 +85,7 @@
         targetScale = 0.82 + 0.12 * (0.5 + 0.5 * Math.sin(time * 2.0));
         targetWave  = 0.04;
         targetSpeed = 0.6;
-        rotSpd = 0.003;
+        rotSpd = 0.0005;
         break;
 
       case 'listening':
@@ -94,21 +94,21 @@
         targetScale = 1.0 + v * 0.42;
         targetWave  = 0.025 + v * 0.13;
         targetSpeed = 0.8 + v * 1.6;
-        rotSpd = 0.003; // constant slow rotation — independent of voice
+        rotSpd = 0.0005; // constant slow rotation — independent of voice
         break;
 
       case 'speaking':
         targetScale = 1.12 + 0.05 * Math.sin(time * 4.0);
         targetWave  = 0.14;
         targetSpeed = 2.8;
-        rotSpd = 0.007;
+        rotSpd = 0.0008;
         break;
 
       case 'thinking':
         targetScale = 0.92 + 0.05 * Math.sin(time * 1.2);
         targetWave  = 0.04;
         targetSpeed = 0.7;
-        rotSpd = 0.002;
+        rotSpd = 0.0004;
         r = 100; g = 90; b = 220;
         break;
 
@@ -116,13 +116,13 @@
         targetScale = 0.88;
         targetWave  = 0.03;
         targetSpeed = 0.5;
-        rotSpd = 0.002;
+        rotSpd = 0.0004;
         r = 255; g = 59; b = 48;
         break;
     }
 
     rotY += rotSpd;
-    rotX = 0.35 + 0.06 * Math.sin(time * 0.3);
+    rotX = 0.35 + 0.06 * Math.sin(time * 0.08);
 
     var rad = baseRadius * smoothScale;
     var cosY = Math.cos(rotY), sinY = Math.sin(rotY);
