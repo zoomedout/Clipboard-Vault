@@ -1,6 +1,6 @@
 /* ── SPA Router ────────────────────────────────────────── */
 /* Hash-based routing: #home, #features, #compare, etc.   */
-/* Fetches content fragments from pages/ and swaps <main>  */
+/* Fetches content fragments from html/ and swaps <main>   */
 /* Note: innerHTML is used to inject trusted first-party   */
 /* HTML fragments served from the same origin. No user     */
 /* input is involved — all content is static site pages.   */
@@ -15,13 +15,13 @@
 
   // Map route names to CSS files (null = no page-specific CSS)
   var CSS_MAP = {
-    home: 'guide.css',
-    features: 'features.css',
-    compare: 'compare.css',
-    'in-action': 'in-action.css',
-    support: 'support.css',
-    privacy: 'privacy.css',
-    'privacy-choices': 'privacy-choices.css'
+    home: 'css/guide.css',
+    features: 'css/features.css',
+    compare: 'css/compare.css',
+    'in-action': 'css/in-action.css',
+    support: 'css/support.css',
+    privacy: 'css/privacy.css',
+    'privacy-choices': 'css/privacy-choices.css'
   };
 
   // Map route names to page titles
@@ -107,7 +107,7 @@
       html = PAGE_CACHE[route];
     } else {
       try {
-        var resp = await fetch('pages/' + route + '.html');
+        var resp = await fetch('html/' + route + '.html');
         if (!resp.ok) {
           main.textContent = 'Page not found: ' + route;
           return;

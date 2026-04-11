@@ -644,7 +644,7 @@ async function startMicCapture() {
 
     if (liveAudioCtx.audioWorklet) {
       // Modern path: AudioWorkletNode (off main thread)
-      await liveAudioCtx.audioWorklet.addModule('mic-processor.js');
+      await liveAudioCtx.audioWorklet.addModule('js/mic-processor.js');
       var workletNode = new AudioWorkletNode(liveAudioCtx, 'mic-processor');
       workletNode.port.onmessage = function (e) {
         sendPcmToWs(e.data);
