@@ -95,61 +95,86 @@
     };
   }
 
+  // ── Temp-particle templates ───────────────────────────────
+  // Pre-generated at init. Each template holds TEMP_COUNT particles
+  // in a CANONICAL frame where the cone axis is +Z. At spawn time
+  // we pick a template index + compute an orthonormal basis for the
+  // region's direction; at render time we transform each canonical
+  // position into world space with a cheap 3×3 multiply. No per-spawn
+  // allocation, no sampleInCone() calls during playback.
+  var TEMPLATE_COUNT = 12;
+  var TEMP_COUNT = 1500;
+  var templates = [];
+
+  function buildTemplates() {
+    for (var t = 0; t < TEMPLATE_COUNT; t++) {
+      var tmpl = new Array(TEMP_COUNT);
+      for (var i = 0; i < TEMP_COUNT; i++) {
+        // Sample in cone around canonical up axis (0,0,1)
+        var pos = sampleInCone(0, 0, 1, 0.9);
+        tmpl[i] = {
+          // Canonical position (region direction = +Z frame)
+          cnx: pos.nx, cny: pos.ny, cnz: pos.nz,
+          rPeak: 1.42 + Math.random() * 0.18,   // 1.42–1.60 — peak blast radius
+          rRest: 1.00 + Math.random() * 0.07,   // 1.00–1.07 — settle on shell
+          ph: Math.random() * Math.PI * 2,
+          sp: 0.70 + Math.random() * 0.50,
+          br: 0.55 + Math.random() * 0.50,
+          stagger: Math.random() * 0.12,
+          // Canonical splash vector
+          csx: (Math.random() - 0.5) * 0.36,
+          csy: (Math.random() - 0.5) * 0.36,
+          csz: (Math.random() - 0.5) * 0.36,
+        };
+      }
+      templates.push(tmpl);
+    }
+  }
+
   // ── Regions lifecycle ─────────────────────────────────────
-  // Temp particles animate through 4 phases:
-  //   1. LAUNCH   core → outer edge (slow, dramatic ease-out)
-  //   2. BLAST    outer edge → peak overshoot beyond the orb
-  //   3. SPLASH   hold at peak with tangential nudge
-  //   4. RETREAT  peak → rest position back on the shell
-  // Region alpha (weight) fades in during launch, holds through
-  // blast/splash/retreat, fades out during the tail of retreat.
+  // Temp particles animate through 3 phases now (no pause at shell):
+  //   1. RISE     core → peak  (one continuous ease-out, no intermediate stop)
+  //   2. SPLASH   brief hold at peak with tangent spread
+  //   3. RETREAT  peak → rest on shell, ease-in-out, slow pull-back
+  // Splash factor ramps in during the last ~30% of rise so tangent
+  // spread builds up as particles reach the apex.
   function spawnRegion() {
     if (regions.length >= MAX_REGIONS) return;
     var d = randDir();
-    var launchDur = 0.90 + Math.random() * 0.30;   // 0.90–1.20s — slow dramatic launch
-    var blastDur  = 0.25 + Math.random() * 0.10;   // 0.25–0.35s — overshoot past shell
-    var splashDur = 0.12 + Math.random() * 0.10;   // 0.12–0.22s — hold at peak, splash
-    var retreatDur = 0.75 + Math.random() * 0.25;  // 0.75–1.00s — slow pull-back
-    var totalDur  = launchDur + blastDur + splashDur + retreatDur + 0.18;  // + stagger buffer
 
-    var region = {
+    // Orthonormal basis for this region's direction — used to
+    // transform each template's canonical position into world space.
+    var ax, ay, az;
+    if (Math.abs(d.nx) < 0.9) { ax = 1; ay = 0; az = 0; }
+    else                      { ax = 0; ay = 1; az = 0; }
+    var e1x = d.ny * az - d.nz * ay;
+    var e1y = d.nz * ax - d.nx * az;
+    var e1z = d.nx * ay - d.ny * ax;
+    var L1 = Math.sqrt(e1x * e1x + e1y * e1y + e1z * e1z);
+    e1x /= L1; e1y /= L1; e1z /= L1;
+    var e2x = d.ny * e1z - d.nz * e1y;
+    var e2y = d.nz * e1x - d.nx * e1z;
+    var e2z = d.nx * e1y - d.ny * e1x;
+
+    var riseDur = 1.00 + Math.random() * 0.30;    // 1.00–1.30s — continuous launch+blast
+    var splashDur = 0.10 + Math.random() * 0.08;  // 0.10–0.18s — brief hold at peak
+    var retreatDur = 0.75 + Math.random() * 0.25; // 0.75–1.00s — slow pull-back
+    var totalDur = riseDur + splashDur + retreatDur + 0.18;
+
+    regions.push({
       nx: d.nx, ny: d.ny, nz: d.nz,
+      e1x: e1x, e1y: e1y, e1z: e1z,
+      e2x: e2x, e2y: e2y, e2z: e2z,
       age: 0,
       weight: 0,
-      fadeIn:  0.20,
+      fadeIn: 0.20,
       fadeOut: 0.45,
-      hold:    Math.max(0.1, totalDur - 0.65),      // auto-matches total particle life
-      launchDur: launchDur,
-      blastDur:  blastDur,
+      hold: Math.max(0.1, totalDur - 0.65),
+      riseDur: riseDur,
       splashDur: splashDur,
       retreatDur: retreatDur,
-      temps: [],
-    };
-    // Spawn temporary particles inside the activation cone. These
-    // are rendered with IDENTICAL per-particle appearance to main
-    // shell particles — same size, same brightness, same color.
-    // The "lit up" look comes from pooled density + the eruption
-    // motion blasting them past the shell and pulling them back.
-    var tempCount = 1500;
-    for (var i = 0; i < tempCount; i++) {
-      var pos = sampleInCone(d.nx, d.ny, d.nz, 0.9);
-      region.temps.push({
-        nx: pos.nx, ny: pos.ny, nz: pos.nz,
-        rLand: 1.12 + Math.random() * 0.10,   // 1.12–1.22 — edge of orb after launch
-        rPeak: 1.42 + Math.random() * 0.18,   // 1.42–1.60 — blasted out beyond orb
-        rRest: 1.00 + Math.random() * 0.07,   // 1.00–1.07 — settles back on shell
-        ph: Math.random() * Math.PI * 2,
-        sp: 0.70 + Math.random() * 0.50,
-        br: 0.55 + Math.random() * 0.50,
-        stagger: Math.random() * 0.12,
-        // Random tangent-ish splash vector — kicks in during blast,
-        // fades during retreat. Magnitude 0..0.18 per component.
-        splashX: (Math.random() - 0.5) * 0.36,
-        splashY: (Math.random() - 0.5) * 0.36,
-        splashZ: (Math.random() - 0.5) * 0.36,
-      });
-    }
-    regions.push(region);
+      templateIdx: (Math.random() * TEMPLATE_COUNT) | 0,
+    });
   }
 
   function updateRegions(dt) {
@@ -176,6 +201,9 @@
     canvas = document.getElementById('voice-orb-canvas');
     if (!canvas) return;
     ctx = canvas.getContext('2d');
+
+    // Pre-generate region temp templates once, reuse for every spawn
+    buildTemplates();
 
     for (var i = 0; i < N; i++) {
       var d = randDir();
@@ -430,70 +458,85 @@
     }
 
     // ── Temporary activation particles ───────────────────────
-    // Rendered with IDENTICAL per-particle appearance to main shell
-    // particles — same sizeBase, same layerMul, same alpha formula.
-    // The "lit up" effect comes entirely from additive pooling: 360–520
-    // temps packed into a ~30° cone naturally sum to a bright hotspot
-    // while each individual temp is visually indistinguishable from a
-    // sphere particle. Alpha is gated by region.weight so they fade in
-    // with the region, hold, and fade out.
+    // Each region references one of 12 pre-generated templates.
+    // At render time we transform each template's canonical (+Z)
+    // position and splash vector into world space using the region's
+    // orthonormal basis. No per-spawn allocation — zero GC pressure
+    // during eruptions.
+    //
+    // Motion is 3 phases (no pause at the shell, one fluid action):
+    //   1. RISE    core → peak (continuous ease-out)
+    //   2. SPLASH  brief hold at peak with tangent spread
+    //   3. RETREAT peak → rest on shell (ease-in-out)
+    // Splash factor ramps in during the last 30% of rise, holds at
+    // 1 during splash, recedes during retreat.
     var TEMP_SIZE_BASE = 0.30;
     var TEMP_LAYER_MUL = 0.92;
+    var CORE_START_R = 0.08;
     for (var r = 0; r < regions.length; r++) {
       var reg = regions[r];
       var rw = reg.weight;
       if (rw < 0.01) continue;
-      var temps = reg.temps;
+      var temps = templates[reg.templateIdx];
+      // Cache basis for hot loop
+      var e1x = reg.e1x, e1y = reg.e1y, e1z = reg.e1z;
+      var e2x = reg.e2x, e2y = reg.e2y, e2z = reg.e2z;
+      var rdx = reg.nx, rdy = reg.ny, rdz = reg.nz;
+      var riseDur = reg.riseDur;
+      var splashDur = reg.splashDur;
+      var retreatDur = reg.retreatDur;
+      var riseEnd = riseDur;
+      var splashEnd = riseDur + splashDur;
+
       for (var ti = 0; ti < temps.length; ti++) {
         var tp = temps[ti];
 
         // ── Phase computation ────────────────────────────────
-        // Four phases per particle, clocked by reg.age - stagger:
-        //   launch  (core → rLand, ease-out cubic, slow & dramatic)
-        //   blast   (rLand → rPeak, ease-out quad, quick overshoot)
-        //   splash  (hold at rPeak with tangential spread)
-        //   retreat (rPeak → rRest, ease-in-out, slow pull-back)
-        var CORE_START_R = 0.08;
         var localAge = reg.age - tp.stagger;
         var phaseR, splashFactor;
 
         if (localAge <= 0) {
           phaseR = CORE_START_R;
           splashFactor = 0;
-        } else if (localAge < reg.launchDur) {
-          // Launch
-          var tL1 = localAge / reg.launchDur;
-          tL1 = 1 - Math.pow(1 - tL1, 3);     // ease-out cubic
-          phaseR = CORE_START_R + (tp.rLand - CORE_START_R) * tL1;
-          splashFactor = 0;
-        } else if (localAge < reg.launchDur + reg.blastDur) {
-          // Blast
-          var tB = (localAge - reg.launchDur) / reg.blastDur;
-          var tBeased = 1 - Math.pow(1 - tB, 2);  // ease-out quad
-          phaseR = tp.rLand + (tp.rPeak - tp.rLand) * tBeased;
-          splashFactor = tBeased;
-        } else if (localAge < reg.launchDur + reg.blastDur + reg.splashDur) {
+        } else if (localAge < riseEnd) {
+          // Rise — core → peak, one continuous ease-out cubic
+          var tR1 = localAge / riseDur;
+          var eased = 1 - Math.pow(1 - tR1, 3);
+          phaseR = CORE_START_R + (tp.rPeak - CORE_START_R) * eased;
+          // Splash ramps in during the last 30%, quadratic ease-in
+          var sp1 = (tR1 - 0.70) / 0.30;
+          splashFactor = sp1 > 0 ? sp1 * sp1 : 0;
+        } else if (localAge < splashEnd) {
           // Splash — hold at peak
           phaseR = tp.rPeak;
           splashFactor = 1;
         } else {
-          // Retreat
-          var tR = (localAge - reg.launchDur - reg.blastDur - reg.splashDur) / reg.retreatDur;
-          if (tR > 1) tR = 1;
-          // ease-in-out
-          var tReased = tR < 0.5 ? 2 * tR * tR : 1 - Math.pow(-2 * tR + 2, 2) * 0.5;
-          phaseR = tp.rPeak + (tp.rRest - tp.rPeak) * tReased;
-          splashFactor = 1 - tReased;
+          // Retreat — peak → rest on shell, ease-in-out
+          var tR2 = (localAge - splashEnd) / retreatDur;
+          if (tR2 > 1) tR2 = 1;
+          var tR2eased = tR2 < 0.5 ? 2 * tR2 * tR2 : 1 - Math.pow(-2 * tR2 + 2, 2) * 0.5;
+          phaseR = tp.rPeak + (tp.rRest - tp.rPeak) * tR2eased;
+          splashFactor = 1 - tR2eased;
         }
 
-        // Wobble + splash overlay on direction
+        // Transform canonical position → world (basis matrix mul)
+        var worldX = tp.cnx * e1x + tp.cny * e2x + tp.cnz * rdx;
+        var worldY = tp.cnx * e1y + tp.cny * e2y + tp.cnz * rdy;
+        var worldZ = tp.cnx * e1z + tp.cny * e2z + tp.cnz * rdz;
+
+        // Transform canonical splash → world
+        var splashWx = tp.csx * e1x + tp.csy * e2x + tp.csz * rdx;
+        var splashWy = tp.csx * e1y + tp.csy * e2y + tp.csz * rdy;
+        var splashWz = tp.csx * e1z + tp.csy * e2z + tp.csz * rdz;
+
+        // Wobble + splash on direction
         var twx = Math.sin(time * 0.55 * tp.sp + tp.ph) * turb;
         var twy = Math.sin(time * 0.67 * tp.sp + tp.ph + 1.1) * turb;
         var twz = Math.sin(time * 0.49 * tp.sp + tp.ph + 2.3) * turb;
 
-        var tnx = tp.nx + twx + tp.splashX * splashFactor;
-        var tny = tp.ny + twy + tp.splashY * splashFactor;
-        var tnz = tp.nz + twz + tp.splashZ * splashFactor;
+        var tnx = worldX + twx + splashWx * splashFactor;
+        var tny = worldY + twy + splashWy * splashFactor;
+        var tnz = worldZ + twz + splashWz * splashFactor;
         var tL = Math.sqrt(tnx * tnx + tny * tny + tnz * tnz);
         if (tL < 0.01) continue;
         tnx /= tL; tny /= tL; tnz /= tL;
@@ -508,7 +551,6 @@
         var tsy = cy + ty1 * trLocal * rad;
         var tdepth = (tz1 + 1) * 0.5;
 
-        // IDENTICAL to main-particle shell-layer formula, gated by rw
         var talpha = (0.08 + tdepth * 0.42) * tp.br * brightness * TEMP_LAYER_MUL * rw;
         if (talpha < 0.018) continue;
         if (talpha > 0.98) talpha = 0.98;
