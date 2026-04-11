@@ -13,17 +13,19 @@
 
   var voiceLevel = 0, targetVoice = 0;
   var smoothExpand = 0, targetExpand = 0;
-  var smoothMicro = 0.02, targetMicro = 0.02;
+  var smoothMicro = 0.01, targetMicro = 0.01;
   var smoothBreathe = 0.04, targetBreathe = 0.04;
 
   var orbState = 'idle';
   var raf = null;
 
   // ── Neural activation regions ─────────────────────────────
-  var activeRegions = [];       // [{nx,ny,nz}, ...] — 2-3 points on unit sphere
-  var nextRegionSwap = 0;       // time to next region snap
-  var REGION_SWAP_INTERVAL = 0.5;
-  var REGION_COUNT = 2;
+  // Each region drifts slowly to a new target; weight fades in/out
+  var MAX_REGIONS = 3;
+  var regions = [];
+  var nextRegionSwap = 0;
+  var REGION_LERP = 0.012;   // position lerp — slow wavy drift toward target
+  var REGION_FADE = 0.015;   // weight lerp — gentle fade in/out
 
   function randomSpherePoint() {
     var u = Math.random() * 2 - 1;
@@ -32,11 +34,36 @@
     return { nx: r * Math.cos(phi), ny: r * Math.sin(phi), nz: u };
   }
 
+  function initRegions() {
+    regions = [];
+    for (var i = 0; i < MAX_REGIONS; i++) {
+      var pt = randomSpherePoint();
+      regions.push({
+        nx: pt.nx, ny: pt.ny, nz: pt.nz,
+        tnx: pt.nx, tny: pt.ny, tnz: pt.nz,
+        weight: 0, targetWeight: 0
+      });
+    }
+  }
+
   function snapRegions() {
-    var count = REGION_COUNT + (Math.random() < 0.35 ? 1 : 0); // occasionally 3
-    activeRegions = [];
-    for (var i = 0; i < count; i++) activeRegions.push(randomSpherePoint());
-    nextRegionSwap = time + REGION_SWAP_INTERVAL;
+    var count = 2 + (Math.random() < 0.35 ? 1 : 0); // 2 or occasionally 3
+    for (var i = 0; i < MAX_REGIONS; i++) {
+      if (i < count) {
+        var pt = randomSpherePoint();
+        regions[i].tnx = pt.nx;
+        regions[i].tny = pt.ny;
+        regions[i].tnz = pt.nz;
+        regions[i].targetWeight = 1;
+      } else {
+        regions[i].targetWeight = 0;
+      }
+    }
+    nextRegionSwap = time + 2.0 + Math.random(); // 2–3 s
+  }
+
+  function fadeOutRegions() {
+    for (var i = 0; i < regions.length; i++) regions[i].targetWeight = 0;
   }
 
   var N = 2500;
@@ -46,6 +73,8 @@
     canvas = document.getElementById('voice-orb-canvas');
     if (!canvas) return;
     ctx = canvas.getContext('2d');
+
+    initRegions();
 
     // Fibonacci sphere + unique random phase per particle for independent motion
     var gr = (1 + Math.sqrt(5)) / 2;
@@ -63,8 +92,6 @@
         // Oscillation speed multipliers — slight variation so motion isn't uniform
         s1: 0.85 + Math.random() * 0.3,
         s2: 0.85 + Math.random() * 0.3,
-        // Random hue per particle — full spectrum
-        h: Math.floor(Math.random() * 360),
       });
     }
 
@@ -101,6 +128,18 @@
     smoothMicro = lerp(smoothMicro, targetMicro, 0.025); // slow — organic feel
     smoothBreathe = lerp(smoothBreathe, targetBreathe, 0.018); // slow — organic feel
 
+    // ── Update region positions and weights (every frame) ────
+    for (var ri = 0; ri < regions.length; ri++) {
+      var reg = regions[ri];
+      reg.nx = lerp(reg.nx, reg.tnx, REGION_LERP);
+      reg.ny = lerp(reg.ny, reg.tny, REGION_LERP);
+      reg.nz = lerp(reg.nz, reg.tnz, REGION_LERP);
+      // Normalize to stay on unit sphere after lerp
+      var rlen = Math.sqrt(reg.nx * reg.nx + reg.ny * reg.ny + reg.nz * reg.nz);
+      if (rlen > 0.001) { reg.nx /= rlen; reg.ny /= rlen; reg.nz /= rlen; }
+      reg.weight = lerp(reg.weight, reg.targetWeight, REGION_FADE);
+    }
+
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // ── State parameters ──────────────────────────────────────
@@ -109,7 +148,7 @@
     switch (orbState) {
       case 'connecting':
         targetExpand = 0;
-        targetMicro = 0.50;
+        targetMicro = 0.25;
         targetBreathe = 0.055;
         break;
 
@@ -128,14 +167,14 @@
 
       case 'thinking':
         targetExpand = 0;
-        targetMicro = 0.35;
+        targetMicro = 0.175;
         targetBreathe = 0.030;
         r = 110; g = 100; b = 230;
         break;
 
       case 'error':
         targetExpand = 0;
-        targetMicro = 0.20;
+        targetMicro = 0.10;
         targetBreathe = 0.020;
         r = 255; g = 59; b = 48;
         break;
@@ -147,8 +186,11 @@
 
     // ── Neural region swap — fires on any speech, VAD-gated upstream ──
     var isSpeaking = voiceLevel > 0.05;
-    if (isSpeaking && time > nextRegionSwap) snapRegions();
-    if (!isSpeaking) activeRegions = [];
+    if (isSpeaking) {
+      if (time > nextRegionSwap) snapRegions();
+    } else {
+      fadeOutRegions();
+    }
 
     // ── Project points ────────────────────────────────────────
     var proj = new Array(N);
@@ -160,25 +202,18 @@
       var oy = d * (0.62 * Math.sin(time * 0.71 * p.s2 + p.p2) + 0.38 * Math.cos(time * 0.89 * p.s1 + p.p3));
       var oz = d * (0.62 * Math.sin(time * 0.61 * p.s1 + p.p3) + 0.38 * Math.cos(time * 1.33 * p.s2 + p.p1));
 
-      // ── Region attraction + scatter ───────────────────────
-      if (activeRegions.length > 0) {
-        for (var ri = 0; ri < activeRegions.length; ri++) {
-          var reg = activeRegions[ri];
-          var dot = p.nx * reg.nx + p.ny * reg.ny + p.nz * reg.nz;
+      // ── Region attraction — gentle pull into active "continents" ──
+      for (var ri = 0; ri < regions.length; ri++) {
+        var reg = regions[ri];
+        if (reg.weight < 0.01) continue;
+        var dot = p.nx * reg.nx + p.ny * reg.ny + p.nz * reg.nz;
 
-          if (dot > 0.72) {
-            // Inside region — pull toward region centre (crowding)
-            var pull = ((dot - 0.72) / 0.28) * 0.45 * rad;
-            ox += (reg.nx - p.nx) * pull;
-            oy += (reg.ny - p.ny) * pull;
-            oz += (reg.nz - p.nz) * pull;
-          } else if (dot > 0.52) {
-            // Annular halo just outside — scatter away
-            var scatter = ((dot - 0.52) / 0.20) * 0.18 * rad;
-            ox -= (reg.nx - p.nx) * scatter;
-            oy -= (reg.ny - p.ny) * scatter;
-            oz -= (reg.nz - p.nz) * scatter;
-          }
+        if (dot > 0.3) {
+          // Inside the region — smoothly pull toward region centre
+          var pull = ((dot - 0.3) / 0.7) * 0.35 * rad * reg.weight;
+          ox += (reg.nx - p.nx) * pull;
+          oy += (reg.ny - p.ny) * pull;
+          oz += (reg.nz - p.nz) * pull;
         }
       }
 
@@ -186,7 +221,6 @@
         sx: cx + p.nx * rad + ox,
         sy: cy + p.ny * rad + oy,
         z: p.nz + oz / rad,
-        h: p.h
       };
     }
 
@@ -218,7 +252,6 @@
     ctx.clip();
 
     // ── Layer 2: Core glow — blue, voice-reactive ─────────────
-    // Dim blue ember at rest, blazes when speaking
     var coreA = 0.08 + voiceLevel * 0.38;
     var coreR = rad * (0.45 + voiceLevel * 0.25);
     var core = ctx.createRadialGradient(cx, cy, 0, cx, cy, coreR);
@@ -230,34 +263,36 @@
     ctx.fillStyle = core;
     ctx.fill();
 
-    // ── Layer 2b: Neural region glows + subtle core connections ──
-    for (var ri = 0; ri < activeRegions.length; ri++) {
-      var reg = activeRegions[ri];
+    // ── Layer 2b: Neural region glows — country-sized diffuse patches ──
+    for (var ri = 0; ri < regions.length; ri++) {
+      var reg = regions[ri];
+      var w = reg.weight;
+      if (w < 0.01) continue;
+
       var rsx = cx + reg.nx * rad;
       var rsy = cy + reg.ny * rad;
 
-      // Subtle diffuse trail from core toward region (not a line — a soft smear)
-      var trail = ctx.createRadialGradient(cx, cy, 0, cx, cy, rad * 0.95);
+      // Subtle diffuse trail from core toward region
       var trailAngleX = (rsx - cx) / rad;
       var trailAngleY = (rsy - cy) / rad;
-      // Bias the gradient toward the region using an offset inner focal point
-      trail = ctx.createRadialGradient(
+      var trail = ctx.createRadialGradient(
         cx + trailAngleX * rad * 0.2, cy + trailAngleY * rad * 0.2, 0,
         cx, cy, rad
       );
-      trail.addColorStop(0,    'rgba(80,140,255,0.10)');
-      trail.addColorStop(0.6,  'rgba(60,110,240,0.03)');
-      trail.addColorStop(1,    'rgba(40,80,220,0)');
+      trail.addColorStop(0,   'rgba(80,140,255,' + (0.10 * w).toFixed(2) + ')');
+      trail.addColorStop(0.6, 'rgba(60,110,240,' + (0.03 * w).toFixed(2) + ')');
+      trail.addColorStop(1,   'rgba(40,80,220,0)');
       ctx.beginPath();
       ctx.arc(cx, cy, rad, 0, Math.PI * 2);
       ctx.fillStyle = trail;
       ctx.fill();
 
-      // Bright glow spot at the region surface
-      var spotR = rad * 0.22;
+      // Large diffuse glow at region surface — continent-sized, soft falloff
+      var spotR = rad * 0.65;
       var spot = ctx.createRadialGradient(rsx, rsy, 0, rsx, rsy, spotR);
-      spot.addColorStop(0,   'rgba(140,200,255,0.45)');
-      spot.addColorStop(0.4, 'rgba(80,150,255,0.18)');
+      spot.addColorStop(0,   'rgba(160,220,255,' + (0.30 * w).toFixed(2) + ')');
+      spot.addColorStop(0.3, 'rgba(100,170,255,' + (0.15 * w).toFixed(2) + ')');
+      spot.addColorStop(0.6, 'rgba(60,120,240,' + (0.06 * w).toFixed(2) + ')');
       spot.addColorStop(1,   'rgba(40,80,220,0)');
       ctx.beginPath();
       ctx.arc(rsx, rsy, spotR, 0, Math.PI * 2);
@@ -265,16 +300,13 @@
       ctx.fill();
     }
 
-    // ── Layer 3: Particles ────────────────────────────────────
-    var useStateColor = (orbState === 'thinking' || orbState === 'error');
+    // ── Layer 3: Particles — white (or state color) ───────────
     for (var j = 0; j < N; j++) {
       var pt = proj[j];
       var depth = (pt.z + 1.3) / 2.6;                     // 0..1
       var dotSize = (0.15 + depth * 0.38) * dpr;
       var alpha = Math.max(0, 0.05 + depth * 0.88);
-      var color = useStateColor
-        ? 'rgba(' + r + ',' + g + ',' + b + ',' + alpha.toFixed(2) + ')'
-        : 'hsla(' + pt.h + ',100%,80%,' + alpha.toFixed(2) + ')';
+      var color = 'rgba(' + r + ',' + g + ',' + b + ',' + alpha.toFixed(2) + ')';
 
       ctx.beginPath();
       ctx.arc(pt.sx, pt.sy, dotSize, 0, Math.PI * 2);
