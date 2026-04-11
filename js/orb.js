@@ -137,7 +137,7 @@
       proj[i] = {
         sx: cx + p.nx * rad + ox,
         sy: cy + p.ny * rad + oy,
-        z:       p.nz * rad + oz   // depth for size/opacity
+        z:       p.nz + oz / rad   // normalised depth (-1..1) for size/opacity
       };
     }
 
