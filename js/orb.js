@@ -102,7 +102,7 @@
   // region's direction; at render time we transform each canonical
   // position into world space with a cheap 3×3 multiply. No per-spawn
   // allocation, no sampleInCone() calls during playback.
-  var TEMPLATE_COUNT = 12;
+  var TEMPLATE_COUNT = 15;
   var TEMP_COUNT = 1500;
   var templates = [];
 
@@ -115,7 +115,13 @@
         tmpl[i] = {
           // Canonical position (region direction = +Z frame)
           cnx: pos.nx, cny: pos.ny, cnz: pos.nz,
-          rPeak: 1.42 + Math.random() * 0.18,   // 1.42–1.60 — peak blast radius
+          // Wide rPeak range — fills the entire path from just-outside
+          // the shell (1.08) to the far blast apex (1.63). Particles
+          // landing at different depths form a continuous density
+          // gradient from the orb surface outward so the extension
+          // reads as "orb leaking/extending" rather than a detached
+          // cluster with a gap.
+          rPeak: 1.08 + Math.random() * 0.55,   // 1.08–1.63 — continuous gradient
           rRest: 1.00 + Math.random() * 0.07,   // 1.00–1.07 — settle on shell
           ph: Math.random() * Math.PI * 2,
           sp: 0.70 + Math.random() * 0.50,
