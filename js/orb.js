@@ -78,7 +78,7 @@
     // ── State parameters → set targets, not values ─────────
     var rotSpd = 0.004;
     var wFreq  = 3.0;
-    var r = 100, g = 130, b = 255;
+    var r = 255, g = 255, b = 255;
 
     switch (orbState) {
       case 'connecting':
