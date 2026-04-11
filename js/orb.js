@@ -43,6 +43,7 @@
   // Pale lavender-purple base
   var R = 0, G = 255, B = 255;
   var curR = R, curG = G, curB = B;
+  var hue = 195; // start at cyan, will drift slowly
 
   // ── Activation regions ────────────────────────────────────
   var MAX_REGIONS = 4;
@@ -63,6 +64,26 @@
   }
 
   function lerp(a, b, t) { return a + (b - a) * t; }
+
+  function hslToRgb(h, s, l) {
+    var r, g, b;
+    if (s === 0) { r = g = b = l; }
+    else {
+      var hue2rgb = function (p, q, t) {
+        if (t < 0) t += 1; if (t > 1) t -= 1;
+        if (t < 1 / 6) return p + (q - p) * 6 * t;
+        if (t < 1 / 2) return q;
+        if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+        return p;
+      };
+      var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+      var p = 2 * l - q;
+      r = hue2rgb(p, q, h + 1 / 3);
+      g = hue2rgb(p, q, h);
+      b = hue2rgb(p, q, h - 1 / 3);
+    }
+    return [r * 255, g * 255, b * 255];
+  }
 
   // Sample a direction within a cone around (dx,dy,dz). Uses a
   // center-biased distribution: particles cluster denser near the
@@ -297,7 +318,9 @@
     // flutter ∈ roughly [-1.27, +1.27]
 
     // ── State-driven targets ───────────────────────────────
-    var tR = R, tG = G, tB = B;
+    hue = (hue + dt * 4) % 360; // 4 = degrees per second, ~90s for full loop
+    var rgb = hslToRgb(hue / 360, 0.85, 0.62);
+    var tR = rgb[0], tG = rgb[1], tB = rgb[2];
     switch (orbState) {
       case 'connecting':
         targetExpand = 0;
