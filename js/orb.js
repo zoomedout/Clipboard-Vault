@@ -1,5 +1,7 @@
 /* ── Particle Sphere Orb ─────────────────────────────────────
-   Canvas-based 3D dot sphere. Driven by:
+   No rotation. Each particle oscillates independently — organic,
+   living feel. Voice drives radial expansion from the inside out.
+
      orbSetState(state)   — 'idle'|'connecting'|'listening'|'speaking'|'thinking'|'error'
      orbSetVoice(0..1)    — speech probability from VAD
    ─────────────────────────────────────────────────────────── */
@@ -7,14 +9,12 @@
   'use strict';
 
   var canvas, ctx, dpr, cx, cy, baseRadius;
-  var rotY = 0, rotX = 0.38;
   var time = 0;
 
-  // All voice-reactive values smoothed independently
-  var voiceLevel = 0, targetVoice = 0;  // 0..1 from VAD
-  var smoothScale = 1, targetScale = 1;
-  var smoothWave = 0.04, targetWave = 0.04;
-  var smoothSpeed = 1.0, targetSpeed = 1.0;
+  var voiceLevel = 0, targetVoice = 0;
+  var smoothExpand = 0, targetExpand = 0;
+  var smoothMicro = 0.02, targetMicro = 0.02;
+  var smoothBreathe = 0.04, targetBreathe = 0.04;
 
   var orbState = 'idle';
   var raf = null;
@@ -27,7 +27,7 @@
     if (!canvas) return;
     ctx = canvas.getContext('2d');
 
-    // Fibonacci sphere — uniform dot distribution on unit sphere
+    // Fibonacci sphere + unique random phase per particle for independent motion
     var gr = (1 + Math.sqrt(5)) / 2;
     for (var i = 0; i < N; i++) {
       var theta = Math.acos(1 - 2 * (i + 0.5) / N);
@@ -36,8 +36,13 @@
         nx: Math.sin(theta) * Math.cos(phi),
         ny: Math.sin(theta) * Math.sin(phi),
         nz: Math.cos(theta),
-        theta: theta,
-        phi: phi
+        // Three independent oscillation phases — makes each particle unique
+        p1: Math.random() * Math.PI * 2,
+        p2: Math.random() * Math.PI * 2,
+        p3: Math.random() * Math.PI * 2,
+        // Oscillation speed multipliers — slight variation so motion isn't uniform
+        s1: 0.85 + Math.random() * 0.3,
+        s2: 0.85 + Math.random() * 0.3,
       });
     }
 
@@ -57,7 +62,6 @@
     canvas.style.height = h + 'px';
     cx = canvas.width / 2;
     cy = canvas.height / 2;
-    // Leave room so even at max voice scale dots never leave the canvas
     baseRadius = Math.min(w, h) * 0.34 * dpr;
   }
 
@@ -67,120 +71,104 @@
     raf = requestAnimationFrame(tick);
     time += 0.016;
 
-    // Smooth all target values — very slow easing for fluid organic feel
-    voiceLevel  = lerp(voiceLevel,  targetVoice, 0.035);
-    smoothScale = lerp(smoothScale, targetScale, 0.022);
-    smoothWave  = lerp(smoothWave,  targetWave,  0.028);
-    smoothSpeed = lerp(smoothSpeed, targetSpeed, 0.028);
+    // Very slow easing — everything feels unhurried
+    voiceLevel    = lerp(voiceLevel,    targetVoice,   0.032);
+    smoothExpand  = lerp(smoothExpand,  targetExpand,  0.020);
+    smoothMicro   = lerp(smoothMicro,   targetMicro,   0.025);
+    smoothBreathe = lerp(smoothBreathe, targetBreathe, 0.018);
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // ── State parameters → set targets, not values ─────────
-    var rotSpd = 0.0006;
-    var wFreq  = 3.0;
+    // ── State parameters ──────────────────────────────────────
     var r = 255, g = 255, b = 255;
 
     switch (orbState) {
       case 'connecting':
-        targetScale = 0.82 + 0.12 * (0.5 + 0.5 * Math.sin(time * 2.0));
-        targetWave  = 0.04;
-        targetSpeed = 0.6;
-        rotSpd = 0.0005;
+        targetExpand  = 0;
+        targetMicro   = 0.018;
+        targetBreathe = 0.055;
         break;
 
       case 'listening':
-        // sqrt curve: quiet speech gives gentle expansion, loud gives full
+        // sqrt so quiet voice = gentle swell, loud = full expansion
         var v = Math.sqrt(voiceLevel);
-        targetScale = 1.0 + v * 0.42;
-        targetWave  = 0.025 + v * 0.13;
-        targetSpeed = 0.8 + v * 1.6;
-        rotSpd = 0.0005; // constant slow rotation — independent of voice
+        targetExpand  = v * 0.40;
+        targetMicro   = 0.022 + v * 0.018;
+        targetBreathe = 0.040;
         break;
 
       case 'speaking':
-        targetScale = 1.12 + 0.05 * Math.sin(time * 4.0);
-        targetWave  = 0.14;
-        targetSpeed = 2.8;
-        rotSpd = 0.0008;
+        targetExpand  = 0.30;
+        targetMicro   = 0.035;
+        targetBreathe = 0.065;
         break;
 
       case 'thinking':
-        targetScale = 0.92 + 0.05 * Math.sin(time * 1.2);
-        targetWave  = 0.04;
-        targetSpeed = 0.7;
-        rotSpd = 0.0004;
-        r = 100; g = 90; b = 220;
+        targetExpand  = 0;
+        targetMicro   = 0.012;
+        targetBreathe = 0.030;
+        r = 110; g = 100; b = 230;
         break;
 
       case 'error':
-        targetScale = 0.88;
-        targetWave  = 0.03;
-        targetSpeed = 0.5;
-        rotSpd = 0.0004;
+        targetExpand  = 0;
+        targetMicro   = 0.008;
+        targetBreathe = 0.020;
         r = 255; g = 59; b = 48;
         break;
     }
 
-    rotY += rotSpd;
-    rotX = 0.35 + 0.06 * Math.sin(time * 0.08);
+    // Global breath — slow sine, all particles share this
+    var breathOffset = smoothBreathe * Math.sin(time * 0.45);
 
-    var rad = baseRadius * smoothScale;
-    var cosY = Math.cos(rotY), sinY = Math.sin(rotY);
-    var cosX = Math.cos(rotX), sinX = Math.sin(rotX);
+    var rad = baseRadius * (1 + smoothExpand + breathOffset);
 
-    // ── Project points ────────────────────────────────────────
+    // ── Project points (no rotation — static orientation) ─────
     var proj = new Array(N);
     for (var i = 0; i < N; i++) {
       var p = pts[i];
 
-      // Layered wave displacement — multiple frequencies for organic flow
-      var wave = smoothWave * (
-        Math.sin(p.theta * wFreq       + time * smoothSpeed) *
-        Math.cos(p.phi   * 2.2         + time * smoothSpeed * 0.5) +
-        0.4 * Math.sin(p.theta * wFreq * 1.7 + time * smoothSpeed * 1.3 + p.phi * 0.8)
-      );
-      var rr = 1 + wave;
+      // Each particle drifts independently with three overlapping oscillations
+      // Different frequencies at irrational ratios → never fully repeats
+      var micro =
+        smoothMicro * 0.55 * Math.sin(time * 0.71 * p.s1 + p.p1) +
+        smoothMicro * 0.30 * Math.cos(time * 1.37 * p.s2 + p.p2) +
+        smoothMicro * 0.15 * Math.sin(time * 2.09        + p.p3);
 
-      var nx = p.nx * rr, ny = p.ny * rr, nz = p.nz * rr;
+      var rr = 1 + micro;
 
-      // Rotate Y axis
-      var x1 = nx * cosY + nz * sinY;
-      var z1 = -nx * sinY + nz * cosY;
-
-      // Rotate X axis (slight tilt)
-      var y2 = ny * cosX - z1 * sinX;
-      var z2 = ny * sinX + z1 * cosX;
-
-      proj[i] = { sx: cx + x1 * rad, sy: cy + y2 * rad, z: z2 };
+      proj[i] = {
+        sx: cx + p.nx * rr * rad,
+        sy: cy + p.ny * rr * rad,
+        z:       p.nz * rr          // depth for size/opacity — no rotation
+      };
     }
 
-    // Sort back-to-front for correct depth layering
+    // Sort back-to-front
     proj.sort(function (a, b) { return a.z - b.z; });
 
-    // ── Clip to circle so dots never escape into a square ─────
+    // ── Clip to circle — no square escape ─────────────────────
     ctx.save();
     ctx.beginPath();
-    ctx.arc(cx, cy, rad * 1.18, 0, Math.PI * 2);
+    ctx.arc(cx, cy, rad * 1.15, 0, Math.PI * 2);
     ctx.clip();
 
     // ── Central glow ──────────────────────────────────────────
-    var glowR = rad * 0.7;
-    var glowA = 0.06 + voiceLevel * 0.08;
-    var grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, glowR);
+    var glowA = 0.05 + voiceLevel * 0.07;
+    var grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, rad * 0.75);
     grd.addColorStop(0, 'rgba(' + r + ',' + g + ',' + b + ',' + glowA.toFixed(2) + ')');
     grd.addColorStop(1, 'rgba(' + r + ',' + g + ',' + b + ',0)');
     ctx.beginPath();
-    ctx.arc(cx, cy, glowR, 0, Math.PI * 2);
+    ctx.arc(cx, cy, rad * 0.75, 0, Math.PI * 2);
     ctx.fillStyle = grd;
     ctx.fill();
 
-    // ── Draw dots — tiny for iOS fine-grain look ───────────────
+    // ── Draw dots ─────────────────────────────────────────────
     for (var j = 0; j < N; j++) {
       var pt = proj[j];
-      var depth = (pt.z + 1.3) / 2.6;              // 0..1 front-to-back
-      var edgeFade = 1 - Math.pow(Math.max(0, depth - 0.5) * 2, 1.5); // fade outer ring
-      var dotSize = (0.15 + depth * 0.38) * dpr;   // very fine iOS-style dots
-      var alpha = Math.max(0, (0.06 + depth * 0.88) * (0.4 + edgeFade * 0.6));
+      var depth = (pt.z + 1.3) / 2.6;                     // 0..1
+      var dotSize = (0.15 + depth * 0.38) * dpr;
+      var alpha = Math.max(0, 0.05 + depth * 0.88);
 
       ctx.beginPath();
       ctx.arc(pt.sx, pt.sy, dotSize, 0, Math.PI * 2);
@@ -198,7 +186,6 @@
       if (raf) { cancelAnimationFrame(raf); raf = null; }
       if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
     } else {
-      // Re-measure now that the overlay is visible (was display:none at init)
       resize();
       if (!raf) tick();
     }
@@ -208,7 +195,6 @@
     targetVoice = Math.max(0, Math.min(1, p));
   };
 
-  // Init after DOM is ready (script loads after body)
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {
