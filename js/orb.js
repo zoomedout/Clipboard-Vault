@@ -41,7 +41,7 @@
   var pts = [];
 
   // Pale lavender-purple base
-  var R = 205, G = 170, B = 255;
+  var R = 255, G = 255, B = 255;
   var curR = R, curG = G, curB = B;
 
   // ── Activation regions ────────────────────────────────────
@@ -72,7 +72,7 @@
     // Orthonormal basis around D
     var ax, ay, az;
     if (Math.abs(dx) < 0.9) { ax = 1; ay = 0; az = 0; }
-    else                    { ax = 0; ay = 1; az = 0; }
+    else { ax = 0; ay = 1; az = 0; }
     var e1x = dy * az - dz * ay;
     var e1y = dz * ax - dx * az;
     var e1z = dx * ay - dy * ax;
@@ -84,7 +84,7 @@
 
     // Bias cosφ toward 1 (cluster near center) via power distribution
     var u = Math.random();
-    var cosPhi = minCos + (1 - minCos) * Math.pow(u, 0.45);
+    var cosPhi = minCos + (1 - minCos) * Math.pow(u, 0.9);
     var sinPhi = Math.sqrt(Math.max(0, 1 - cosPhi * cosPhi));
     var psi = Math.random() * Math.PI * 2;
     var cp = Math.cos(psi), sp = Math.sin(psi);
@@ -103,9 +103,10 @@
       nx: d.nx, ny: d.ny, nz: d.nz,
       age: 0,
       weight: 0,
-      fadeIn: 0.16 + Math.random() * 0.12,   // 0.16–0.28s
+      fadeIn: 0.16 + Math.random() * 0.12,   // 0.16–0.28s (alpha fade)
       hold: 1.20 + Math.random() * 0.80,     // 1.20–2.00s
       fadeOut: 0.55 + Math.random() * 0.35,  // 0.55–0.90s
+      expandDur: 0.45 + Math.random() * 0.20, // 0.45–0.65s  (core → shell travel)
       temps: [],
     };
     // Spawn temporary particles inside the activation cone. These
@@ -113,15 +114,16 @@
     // shell particles — same size, same brightness, same color.
     // The "lit up" look comes purely from pooled density in the
     // cone, summed by additive blending. More temps = brighter spot.
-    var tempCount = 360 + Math.floor(Math.random() * 160);  // 360–520
+    var tempCount = 1500;
     for (var i = 0; i < tempCount; i++) {
-      var pos = sampleInCone(d.nx, d.ny, d.nz, 0.78);
+      var pos = sampleInCone(d.nx, d.ny, d.nz, 0.9);
       region.temps.push({
         nx: pos.nx, ny: pos.ny, nz: pos.nz,
         r0: 0.94 + Math.random() * 0.11,     // 0.94–1.05 — matches main shell spread
         ph: Math.random() * Math.PI * 2,
         sp: 0.70 + Math.random() * 0.50,
         br: 0.55 + Math.random() * 0.50,     // matches main-particle br range
+        stagger: Math.random() * 0.15,       // 0–0.15s delay — some particles lag
       });
     }
     regions.push(region);
@@ -231,7 +233,7 @@
     // pulsing. Amplitude is proportional to voiceFast so rest is calm
     // and speech drives visible flutter.
     var flutter =
-        Math.sin(time * 3.1 + 0.2) * 0.55
+      Math.sin(time * 3.1 + 0.2) * 0.55
       + Math.sin(time * 5.7 + 1.1) * 0.35
       + Math.sin(time * 8.3 + 2.8) * 0.22
       + Math.sin(time * 11.6 + 3.5) * 0.15;
@@ -303,17 +305,17 @@
     var spawnCap = MAX_REGIONS;
     switch (orbState) {
       case 'speaking':
-        spawnInterval = 1.8;
+        spawnInterval = 0.5;
         spawnCap = 2;
         break;
       case 'listening':
         if (voiceFast > 0.10) {
-          spawnInterval = 2.0;
+          spawnInterval = 0.5;
           spawnCap = 2;
         }
         break;
       case 'thinking':
-        spawnInterval = 3.0;
+        spawnInterval = 0.5;
         spawnCap = 1;
         break;
     }
@@ -343,9 +345,9 @@
     // Soft halo behind particles
     var halo = ctx.createRadialGradient(cx, cy, 0, cx, cy, rad * 1.85);
     var haloA = 0.06 + smoothEnergy * 0.14;
-    halo.addColorStop(0,    'rgba(' + rgbStr + ',' + haloA.toFixed(3) + ')');
+    halo.addColorStop(0, 'rgba(' + rgbStr + ',' + haloA.toFixed(3) + ')');
     halo.addColorStop(0.35, 'rgba(' + rgbStr + ',' + (haloA * 0.45).toFixed(3) + ')');
-    halo.addColorStop(1,    'rgba(0,0,0,0)');
+    halo.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = halo;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -388,9 +390,9 @@
       // ── Layer-specific size/alpha base ──────────────────
       var sizeBase;
       var layerMul;
-      if (p.layer === 0)      { sizeBase = 0.50; layerMul = 1.25; }  // core
+      if (p.layer === 0) { sizeBase = 0.50; layerMul = 1.25; }  // core
       else if (p.layer === 1) { sizeBase = 0.30; layerMul = 0.92; }  // shell
-      else                    { sizeBase = 0.27; layerMul = 0.58; }  // wispy
+      else { sizeBase = 0.27; layerMul = 0.58; }  // wispy
 
       var alpha = (0.08 + depth * 0.42) * p.br * brightness * layerMul;
       if (alpha < 0.018) continue;
@@ -434,7 +436,24 @@
         if (tL < 0.01) continue;
         tnx /= tL; tny /= tL; tnz /= tL;
 
-        var trLocal = tp.r0 + Math.sin(time * 1.15 * tp.sp + tp.ph) * 0.055 * (1 + smoothTurb);
+        // Core → shell expansion travel. Particles start near center
+        // (CORE_START_R) and travel outward to their destination during
+        // reg.expandDur, with a per-temp stagger so they don't all arrive
+        // at once. Cubic ease-out makes them burst fast then settle.
+        var CORE_START_R = 0.08;
+        var localAge = reg.age - tp.stagger;
+        var travel;
+        if (localAge <= 0) {
+          travel = 0;
+        } else if (localAge >= reg.expandDur) {
+          travel = 1;
+        } else {
+          var t = localAge / reg.expandDur;
+          travel = 1 - Math.pow(1 - t, 3);    // ease-out cubic
+        }
+
+        var destR = tp.r0 + Math.sin(time * 1.15 * tp.sp + tp.ph) * 0.055 * (1 + smoothTurb);
+        var trLocal = CORE_START_R + (destR - CORE_START_R) * travel;
 
         var tx1 = tnx * cY + tnz * sY;
         var tz1 = -tnx * sY + tnz * cY;
