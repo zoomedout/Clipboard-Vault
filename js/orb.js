@@ -102,8 +102,8 @@
   // region's direction; at render time we transform each canonical
   // position into world space with a cheap 3×3 multiply. No per-spawn
   // allocation, no sampleInCone() calls during playback.
-  var TEMPLATE_COUNT = 15;
-  var TEMP_COUNT = 1500;
+  var TEMPLATE_COUNT = 20;
+  var TEMP_COUNT = 2500;
   var templates = [];
 
   function buildTemplates() {
@@ -121,7 +121,7 @@
           // gradient from the orb surface outward so the extension
           // reads as "orb leaking/extending" rather than a detached
           // cluster with a gap.
-          rPeak: 1.08 + Math.random() * 0.55,   // 1.08–1.63 — continuous gradient
+          rPeak: 1.2 + Math.random() * 0.55,   // 1.08–1.63 — continuous gradient
           rRest: 1.00 + Math.random() * 0.07,   // 1.00–1.07 — settle on shell
           ph: Math.random() * Math.PI * 2,
           sp: 0.70 + Math.random() * 0.50,
@@ -152,7 +152,7 @@
     // transform each template's canonical position into world space.
     var ax, ay, az;
     if (Math.abs(d.nx) < 0.9) { ax = 1; ay = 0; az = 0; }
-    else                      { ax = 0; ay = 1; az = 0; }
+    else { ax = 0; ay = 1; az = 0; }
     var e1x = d.ny * az - d.nz * ay;
     var e1y = d.nz * ax - d.nx * az;
     var e1z = d.nx * ay - d.ny * ax;
@@ -318,11 +318,16 @@
         break;
 
       case 'speaking':
-        // Gemini talking back — big, with subtle rhythmic wiggle
-        targetExpand = 0.52 + 0.08 * Math.sin(time * 4.2) + 0.05 * Math.sin(time * 7.1);
-        targetTurb = 0.35;
-        targetBreathe = 0.035;
-        targetEnergy = 0.92;
+        // Gemini speaking — driven by the playback analyser RMS that
+        // chat.js feeds into orbSetVoice during this state. Same dual-
+        // envelope + flutter pattern as listening, but with a higher
+        // baseline so the orb reads as actively broadcasting.
+        var vfS = voiceFast;
+        var vsS = voiceSlow;
+        targetExpand = 0.22 + vsS * 0.40 + vfS * 0.22 * flutter;
+        targetTurb = 0.16 + vfS * 0.40;
+        targetBreathe = 0.028 + vfS * 0.020;
+        targetEnergy = 0.55 + vfS * 0.45;
         break;
 
       case 'thinking':
@@ -362,8 +367,12 @@
     var spawnCap = MAX_REGIONS;
     switch (orbState) {
       case 'speaking':
-        spawnInterval = 0.5;     // minimum — multiple regions run in parallel
-        spawnCap = 4;
+        // Gate on voiceFast so regions only fire when Gemini is actually
+        // audible — no eruptions during TTS silence gaps.
+        if (voiceFast > 0.08) {
+          spawnInterval = 0.5;
+          spawnCap = 4;
+        }
         break;
       case 'listening':
         if (voiceFast > 0.10) {

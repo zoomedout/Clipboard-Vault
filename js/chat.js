@@ -438,6 +438,9 @@ var livePlaybackSources = [];    // active BufferSource nodes for granular stop
 var liveVad = null;              // Silero VAD instance for speech detection
 var liveSpeaking = false;        // true when VAD detects user is speaking
 var liveVadProb = 0;             // continuous VAD speech probability (0..1), per frame
+var liveAnalyser = null;         // AnalyserNode on Gemini TTS playback for orb reactivity
+var liveAnalyserData = null;     // Float32Array scratch buffer for time-domain reads
+var livePlaybackLoopRaf = null;  // requestAnimationFrame id for the playback RMS loop
 var liveTurnCount = 0;           // number of completed Gemini turns (for AEC calibration)
 var liveUserHasSpoken = false;   // true after first real speech in this session
 var liveSpeechStartTime = 0;     // timestamp when current speech started
@@ -664,20 +667,25 @@ async function startMicCapture() {
       var workletNode = new AudioWorkletNode(liveAudioCtx, 'mic-processor');
       workletNode.port.onmessage = function (e) {
         sendPcmToWs(e.data);
-        // RMS amplitude × soft VAD gate → orb. Soft gate (not hard on/off)
-        // so the orb rides the voice envelope naturally without clamping to
-        // zero between words.
+        // Orb signal ownership:
+        //   listening → mic (this handler) owns the signal
+        //   speaking  → playback analyser owns the signal (leave alone)
+        //   other     → write 0 so internal envelopes decay to rest
         if (window.orbSetVoice) {
-          var buf = new Int16Array(e.data);
-          var sum = 0;
-          for (var k = 0; k < buf.length; k++) sum += buf[k] * buf[k];
-          var rms = Math.sqrt(sum / buf.length) / 32768; // 0..1
-          var amp = Math.min(1, rms * 9);
-          // If VAD is loaded, gate by speech probability (0.15 floor so a
-          // tiny residual signal keeps the orb alive through silence gaps).
-          // If VAD failed to load, pass raw amplitude.
-          var gate = liveVad ? (0.15 + 0.85 * liveVadProb) : 1;
-          orbSetVoice(amp * gate);
+          var overlay = document.getElementById('voice-overlay');
+          var state = overlay ? overlay.getAttribute('data-state') : '';
+          if (state === 'listening') {
+            var buf = new Int16Array(e.data);
+            var sum = 0;
+            for (var k = 0; k < buf.length; k++) sum += buf[k] * buf[k];
+            var rms = Math.sqrt(sum / buf.length) / 32768; // 0..1
+            var amp = Math.min(1, rms * 9);
+            // Soft VAD gate (0.15 floor so orb rides through silence gaps).
+            var gate = liveVad ? (0.15 + 0.85 * liveVadProb) : 1;
+            orbSetVoice(amp * gate);
+          } else if (state !== 'speaking') {
+            orbSetVoice(0);
+          }
         }
       };
       source.connect(workletNode);
@@ -790,6 +798,30 @@ async function startVad() {
   }
 }
 
+function startPlaybackAnalyserLoop() {
+  if (livePlaybackLoopRaf) return;
+  var loop = function () {
+    if (!liveAnalyser || !liveAnalyserData) {
+      livePlaybackLoopRaf = null;
+      return;
+    }
+    var overlay = document.getElementById('voice-overlay');
+    var state = overlay ? overlay.getAttribute('data-state') : '';
+    if (state === 'speaking' && window.orbSetVoice) {
+      // Read time-domain playback samples, compute RMS, feed orb.
+      liveAnalyser.getFloatTimeDomainData(liveAnalyserData);
+      var sum = 0;
+      for (var i = 0; i < liveAnalyserData.length; i++) {
+        sum += liveAnalyserData[i] * liveAnalyserData[i];
+      }
+      var rms = Math.sqrt(sum / liveAnalyserData.length); // 0..1
+      orbSetVoice(Math.min(1, rms * 6));
+    }
+    livePlaybackLoopRaf = requestAnimationFrame(loop);
+  };
+  livePlaybackLoopRaf = requestAnimationFrame(loop);
+}
+
 function queueAudioChunk(b64Data) {
   if (liveInterrupted) return;
   var raw = atob(b64Data);
@@ -805,6 +837,14 @@ function queueAudioChunk(b64Data) {
   if (!livePlaybackCtx) {
     livePlaybackCtx = new AudioContext({ sampleRate: 24000 });
     liveNextPlayTime = 0;
+    // Analyser on the playback chain — drives orb reactivity to
+    // Gemini's TTS amplitude. Lazily created with the playback ctx.
+    liveAnalyser = livePlaybackCtx.createAnalyser();
+    liveAnalyser.fftSize = 512;
+    liveAnalyser.smoothingTimeConstant = 0.25;
+    liveAnalyser.connect(livePlaybackCtx.destination);
+    liveAnalyserData = new Float32Array(liveAnalyser.fftSize);
+    startPlaybackAnalyserLoop();
   }
 
   var ctx = livePlaybackCtx;
@@ -813,7 +853,8 @@ function queueAudioChunk(b64Data) {
 
   var source = ctx.createBufferSource();
   source.buffer = buffer;
-  source.connect(ctx.destination);
+  // Route through the analyser so each sample is measured before output.
+  source.connect(liveAnalyser);
 
   var startAt = Math.max(liveNextPlayTime, ctx.currentTime);
   source.start(startAt);
@@ -858,6 +899,15 @@ function cleanupLiveResources() {
     try { livePlaybackSources[i].stop(); } catch (e) { }
   }
   livePlaybackSources = [];
+  if (livePlaybackLoopRaf) {
+    cancelAnimationFrame(livePlaybackLoopRaf);
+    livePlaybackLoopRaf = null;
+  }
+  if (liveAnalyser) {
+    try { liveAnalyser.disconnect(); } catch (e) { }
+    liveAnalyser = null;
+    liveAnalyserData = null;
+  }
   if (livePlaybackCtx) {
     livePlaybackCtx.close().catch(function () { });
     livePlaybackCtx = null;
