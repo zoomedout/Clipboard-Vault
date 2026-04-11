@@ -45,7 +45,7 @@
   var curR = R, curG = G, curB = B;
 
   // ── Activation regions ────────────────────────────────────
-  var MAX_REGIONS = 4;
+  var MAX_REGIONS = 2;
   var regions = [];
   var lastRegionSpawn = 0;
 
@@ -103,24 +103,25 @@
       nx: d.nx, ny: d.ny, nz: d.nz,
       age: 0,
       weight: 0,
-      fadeIn: 0.14 + Math.random() * 0.10,   // 0.14–0.24s
-      hold: 0.80 + Math.random() * 0.80,     // 0.80–1.60s
-      fadeOut: 0.45 + Math.random() * 0.30,  // 0.45–0.75s
+      fadeIn: 0.16 + Math.random() * 0.12,   // 0.16–0.28s
+      hold: 1.20 + Math.random() * 0.80,     // 1.20–2.00s
+      fadeOut: 0.55 + Math.random() * 0.35,  // 0.55–0.90s
       temps: [],
     };
     // Spawn temporary particles inside the activation cone. These
-    // are the ONLY visible indication of a region — main sphere
-    // particles are untouched. Count and brightness both high so
-    // the hot spot reads as genuine new density, not thickening.
-    var tempCount = 220 + Math.floor(Math.random() * 160);  // 220–380
+    // are rendered with IDENTICAL per-particle appearance to main
+    // shell particles — same size, same brightness, same color.
+    // The "lit up" look comes purely from pooled density in the
+    // cone, summed by additive blending. More temps = brighter spot.
+    var tempCount = 360 + Math.floor(Math.random() * 160);  // 360–520
     for (var i = 0; i < tempCount; i++) {
       var pos = sampleInCone(d.nx, d.ny, d.nz, 0.78);
       region.temps.push({
         nx: pos.nx, ny: pos.ny, nz: pos.nz,
-        r0: 0.92 + Math.random() * 0.14,     // 0.92–1.06 — 3D volume, not a flat decal
+        r0: 0.94 + Math.random() * 0.11,     // 0.94–1.05 — matches main shell spread
         ph: Math.random() * Math.PI * 2,
         sp: 0.70 + Math.random() * 0.50,
-        br: 0.95 + Math.random() * 0.40,
+        br: 0.55 + Math.random() * 0.50,     // matches main-particle br range
       });
     }
     regions.push(region);
@@ -302,18 +303,18 @@
     var spawnCap = MAX_REGIONS;
     switch (orbState) {
       case 'speaking':
-        spawnInterval = 0.32;
-        spawnCap = 4;
+        spawnInterval = 1.8;
+        spawnCap = 2;
         break;
       case 'listening':
         if (voiceFast > 0.10) {
-          spawnInterval = 0.28;
-          spawnCap = 3;
+          spawnInterval = 2.0;
+          spawnCap = 2;
         }
         break;
       case 'thinking':
-        spawnInterval = 1.2;
-        spawnCap = 2;
+        spawnInterval = 3.0;
+        spawnCap = 1;
         break;
     }
     if (time - lastRegionSpawn > spawnInterval && regions.length < spawnCap) {
@@ -404,11 +405,15 @@
     }
 
     // ── Temporary activation particles ───────────────────────
-    // Each active region spawned ~95–160 temp particles inside its
-    // cone. They stack additively on top of the already-brightened
-    // main nodes, giving the hot spot genuine density (not fakery
-    // via size boosts). Alpha scales with region.weight so they
-    // fade in/out in sync with the region's lifecycle.
+    // Rendered with IDENTICAL per-particle appearance to main shell
+    // particles — same sizeBase, same layerMul, same alpha formula.
+    // The "lit up" effect comes entirely from additive pooling: 360–520
+    // temps packed into a ~30° cone naturally sum to a bright hotspot
+    // while each individual temp is visually indistinguishable from a
+    // sphere particle. Alpha is gated by region.weight so they fade in
+    // with the region, hold, and fade out.
+    var TEMP_SIZE_BASE = 0.30;
+    var TEMP_LAYER_MUL = 0.92;
     for (var r = 0; r < regions.length; r++) {
       var reg = regions[r];
       var rw = reg.weight;
@@ -417,10 +422,10 @@
       for (var ti = 0; ti < temps.length; ti++) {
         var tp = temps[ti];
 
-        // Micro-wobble so they're not statues
-        var twx = Math.sin(time * 0.85 * tp.sp + tp.ph) * turb * 0.55;
-        var twy = Math.sin(time * 0.97 * tp.sp + tp.ph + 1.1) * turb * 0.55;
-        var twz = Math.sin(time * 0.73 * tp.sp + tp.ph + 2.3) * turb * 0.55;
+        // Same wobble profile as main particles
+        var twx = Math.sin(time * 0.55 * tp.sp + tp.ph) * turb;
+        var twy = Math.sin(time * 0.67 * tp.sp + tp.ph + 1.1) * turb;
+        var twz = Math.sin(time * 0.49 * tp.sp + tp.ph + 2.3) * turb;
 
         var tnx = tp.nx + twx;
         var tny = tp.ny + twy;
@@ -429,7 +434,7 @@
         if (tL < 0.01) continue;
         tnx /= tL; tny /= tL; tnz /= tL;
 
-        var trLocal = tp.r0 + Math.sin(time * 1.4 * tp.sp + tp.ph) * 0.025;
+        var trLocal = tp.r0 + Math.sin(time * 1.15 * tp.sp + tp.ph) * 0.055 * (1 + smoothTurb);
 
         var tx1 = tnx * cY + tnz * sY;
         var tz1 = -tnx * sY + tnz * cY;
@@ -439,11 +444,12 @@
         var tsy = cy + ty1 * trLocal * rad;
         var tdepth = (tz1 + 1) * 0.5;
 
-        var talpha = rw * tp.br * (0.30 + tdepth * 0.72) * brightness;
-        if (talpha < 0.02) continue;
+        // IDENTICAL to main-particle shell-layer formula, gated by rw
+        var talpha = (0.08 + tdepth * 0.42) * tp.br * brightness * TEMP_LAYER_MUL * rw;
+        if (talpha < 0.018) continue;
         if (talpha > 0.98) talpha = 0.98;
 
-        var tsize = (0.38 + tdepth * 0.54) * dpr;
+        var tsize = (TEMP_SIZE_BASE + tdepth * 0.42) * dpr;
 
         ctx.fillStyle = 'rgba(' + rgbStr + ',' + talpha.toFixed(3) + ')';
         ctx.beginPath();
