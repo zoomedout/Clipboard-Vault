@@ -19,7 +19,7 @@
   var orbState = 'idle';
   var raf = null;
 
-  var N = 1500;
+  var N = 2500;
   var pts = [];
 
   function init() {
@@ -84,33 +84,33 @@
     switch (orbState) {
       case 'connecting':
         targetExpand  = 0;
-        targetMicro   = 0.055;   // visible wander at rest
+        targetMicro   = 0.10;    // clearly visible drift at rest
         targetBreathe = 0.055;
         break;
 
       case 'listening':
         var v = Math.sqrt(voiceLevel);
         targetExpand  = v * 0.40;
-        targetMicro   = 0.065 + v * 0.025; // more alive when hearing voice
+        targetMicro   = 0.11 + v * 0.04; // more alive when hearing voice
         targetBreathe = 0.040;
         break;
 
       case 'speaking':
         targetExpand  = 0.30;
-        targetMicro   = 0.080;   // most active
+        targetMicro   = 0.14;    // most active
         targetBreathe = 0.065;
         break;
 
       case 'thinking':
         targetExpand  = 0;
-        targetMicro   = 0.035;   // calm but still alive
+        targetMicro   = 0.07;    // calm but still alive
         targetBreathe = 0.030;
         r = 110; g = 100; b = 230;
         break;
 
       case 'error':
         targetExpand  = 0;
-        targetMicro   = 0.020;
+        targetMicro   = 0.04;
         targetBreathe = 0.020;
         r = 255; g = 59; b = 48;
         break;
@@ -146,10 +146,11 @@
     // ── Layer 1: Outer atmosphere — always on, expands with rad ──
     // Sits outside the clip so it bleeds softly beyond the particle sphere
     var atmR = rad * 1.55;
-    var atmA = 0.07 + breathOffset * 0.3 + voiceLevel * 0.06;
-    var atm = ctx.createRadialGradient(cx, cy, rad * 0.4, cx, cy, atmR);
-    atm.addColorStop(0,   'rgba(60,100,255,' + Math.min(0.18, atmA).toFixed(2) + ')');
-    atm.addColorStop(0.5, 'rgba(40,70,220,0.04)');
+    var atmA = 0.22 + breathOffset * 0.4 + voiceLevel * 0.10;
+    var atm = ctx.createRadialGradient(cx, cy, 0, cx, cy, atmR);
+    atm.addColorStop(0,   'rgba(60,100,255,' + Math.min(0.30, atmA).toFixed(2) + ')');
+    atm.addColorStop(0.4, 'rgba(40,70,220,0.10)');
+    atm.addColorStop(0.75,'rgba(30,55,200,0.04)');
     atm.addColorStop(1,   'rgba(20,40,180,0)');
     ctx.beginPath();
     ctx.arc(cx, cy, atmR, 0, Math.PI * 2);
