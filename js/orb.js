@@ -87,33 +87,33 @@
     switch (orbState) {
       case 'connecting':
         targetExpand  = 0;
-        targetMicro   = 0.10;    // clearly visible drift at rest
+        targetMicro   = 0.50;
         targetBreathe = 0.055;
         break;
 
       case 'listening':
         var v = Math.sqrt(voiceLevel);
         targetExpand  = v * 0.55;
-        targetMicro   = 0.11 + v * 0.04; // more alive when hearing voice
+        targetMicro   = 0.55 + v * 0.20;
         targetBreathe = 0.040;
         break;
 
       case 'speaking':
         targetExpand  = 0.30;
-        targetMicro   = 0.14;    // most active
+        targetMicro   = 0.70;
         targetBreathe = 0.065;
         break;
 
       case 'thinking':
         targetExpand  = 0;
-        targetMicro   = 0.07;    // calm but still alive
+        targetMicro   = 0.35;
         targetBreathe = 0.030;
         r = 110; g = 100; b = 230;
         break;
 
       case 'error':
         targetExpand  = 0;
-        targetMicro   = 0.04;
+        targetMicro   = 0.20;
         targetBreathe = 0.020;
         r = 255; g = 59; b = 48;
         break;
