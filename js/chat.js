@@ -1,5 +1,5 @@
 /* ── Mock voice mode (set true to test orb UI without Gemini) ── */
-var MOCK_VOICE = true;
+var MOCK_VOICE = false;
 
 /* ── Scroll fade-in observer ── */
 var observer = new IntersectionObserver(function (entries) {
