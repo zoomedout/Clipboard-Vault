@@ -19,15 +19,6 @@
   var orbState = 'idle';
   var raf = null;
 
-  // ── Eye state ─────────────────────────────────────────────
-  var eyeX = 0, eyeY = 0;           // current pupil offset (normalised -1..1)
-  var eyeTX = 0, eyeTY = 0;         // target gaze
-  var blinkPhase = 0;                // 0 = open, 1 = fully closed
-  var blinkState = 'open';           // 'open' | 'closing' | 'opening'
-  var blinkStart = 0;
-  var nextBlinkTime = 5;
-  var nextGazeTime  = 3;
-
   var N = 2500;
   var pts = [];
 
@@ -205,101 +196,6 @@
       ctx.fill();
     }
 
-    ctx.restore();
-
-    // ── Layer 4: Eye — drawn on top of particles ───────────────
-    drawEye();
-  }
-
-  function drawEye() {
-    var isSpeaking = orbState === 'speaking' || orbState === 'listening';
-
-    // ── Gaze wandering ───────────────────────────────────────
-    if (time > nextGazeTime) {
-      if (isSpeaking) {
-        eyeTX = 0; eyeTY = 0; // snap to centre when speaking
-      } else {
-        eyeTX = (Math.random() - 0.5) * 1.5;
-        eyeTY = (Math.random() - 0.5) * 0.9;
-      }
-      nextGazeTime = time + 1.8 + Math.random() * 4;
-    }
-    eyeX = lerp(eyeX, eyeTX, isSpeaking ? 0.08 : 0.025);
-    eyeY = lerp(eyeY, eyeTY, isSpeaking ? 0.08 : 0.025);
-
-    // ── Blink state machine ───────────────────────────────────
-    if (blinkState === 'open' && time > nextBlinkTime && !isSpeaking) {
-      blinkState = 'closing'; blinkStart = time;
-    }
-    if (blinkState === 'closing') {
-      blinkPhase = Math.min(1, (time - blinkStart) / 0.07);
-      if (blinkPhase >= 1) { blinkState = 'opening'; blinkStart = time; }
-    }
-    if (blinkState === 'opening') {
-      blinkPhase = 1 - Math.min(1, (time - blinkStart) / 0.11);
-      if (blinkPhase <= 0) {
-        blinkPhase = 0; blinkState = 'open';
-        nextBlinkTime = time + 4 + Math.random() * 5;
-      }
-    }
-
-    // ── Eye geometry ──────────────────────────────────────────
-    var eyeW  = baseRadius * 0.52;
-    var openH = eyeW * 0.40;
-    var eyeH  = openH * (1 - blinkPhase);   // collapses on blink
-
-    if (eyeH < 0.5) return;                  // fully closed — skip draw
-
-    var irisR  = Math.min(eyeH * 0.88, eyeW * 0.30);
-    var pupilR = irisR * 0.46;
-    var maxOff = Math.max(0, irisR - pupilR - 1 * dpr);
-    var px     = cx + eyeX * maxOff;
-    var py     = cy + eyeY * maxOff;
-
-    // Almond clip path
-    ctx.save();
-    ctx.beginPath();
-    ctx.moveTo(cx - eyeW / 2, cy);
-    ctx.quadraticCurveTo(cx, cy - eyeH * 1.1, cx + eyeW / 2, cy);
-    ctx.quadraticCurveTo(cx, cy + eyeH * 0.9,  cx - eyeW / 2, cy);
-    ctx.closePath();
-    ctx.clip();
-
-    // Iris
-    var irisGrd = ctx.createRadialGradient(px, py, 0, px, py, irisR);
-    irisGrd.addColorStop(0,   'rgba(120,190,255,0.95)');
-    irisGrd.addColorStop(0.5, 'rgba(60,120,240,0.90)');
-    irisGrd.addColorStop(1,   'rgba(20,60,200,0.80)');
-    ctx.beginPath();
-    ctx.arc(px, py, irisR, 0, Math.PI * 2);
-    ctx.fillStyle = irisGrd;
-    ctx.fill();
-
-    // Pupil — dilates with voice
-    var dilate = 1 + voiceLevel * 0.5;
-    ctx.beginPath();
-    ctx.arc(px, py, pupilR * dilate, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(0,5,20,0.96)';
-    ctx.fill();
-
-    // Specular highlight
-    ctx.beginPath();
-    ctx.arc(px - pupilR * 0.28, py - pupilR * 0.32, pupilR * 0.20, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(255,255,255,0.85)';
-    ctx.fill();
-
-    ctx.restore();
-
-    // Eye outline glow (drawn outside clip)
-    ctx.save();
-    ctx.beginPath();
-    ctx.moveTo(cx - eyeW / 2, cy);
-    ctx.quadraticCurveTo(cx, cy - eyeH * 1.1, cx + eyeW / 2, cy);
-    ctx.quadraticCurveTo(cx, cy + eyeH * 0.9,  cx - eyeW / 2, cy);
-    ctx.closePath();
-    ctx.strokeStyle = 'rgba(120,180,255,' + (0.25 + voiceLevel * 0.3).toFixed(2) + ')';
-    ctx.lineWidth = 0.8 * dpr;
-    ctx.stroke();
     ctx.restore();
   }
 
