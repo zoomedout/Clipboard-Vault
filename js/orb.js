@@ -37,7 +37,7 @@
   var rotY = 0;
   var ROT_SPEED = 0.11;
 
-  var N = 1900;
+  var N = 3800;
   var pts = [];
 
   // Pale cyan-white base
@@ -109,21 +109,21 @@
       var layer;
       var frac = i / N;
 
-      if (frac < 0.15) {
+      if (frac < 0.12) {
         // Inner core — clustered near center
         rOff = Math.abs(gauss()) * 0.32;
         layer = 0;
-      } else if (frac < 0.78) {
-        // Main shell
-        rOff = 1 + gauss() * 0.13;
+      } else if (frac < 0.87) {
+        // Main shell — bulk of the cloud, tighter distribution
+        rOff = 1 + gauss() * 0.10;
         layer = 1;
       } else {
-        // Wispy outer halo
-        rOff = 1.05 + Math.abs(gauss()) * 0.35;
+        // Wispy outer halo — closer to shell so it doesn't fly off
+        rOff = 1.02 + Math.abs(gauss()) * 0.20;
         layer = 2;
       }
       if (rOff < 0.05) rOff = 0.05;
-      if (rOff > 1.85) rOff = 1.85;
+      if (rOff > 1.60) rOff = 1.60;
 
       pts.push({
         nx: d.nx, ny: d.ny, nz: d.nz,
@@ -286,7 +286,7 @@
     var rad = baseRadius * (1 + smoothExpand + breath);
 
     var turb = 0.055 + smoothTurb;
-    var brightness = 0.38 + smoothEnergy * 0.58;
+    var brightness = 0.55 + smoothEnergy * 0.50;
 
     // ── Render ──────────────────────────────────────────────
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -307,22 +307,26 @@
       var p = pts[i];
 
       // ── Region influence ────────────────────────────────
+      // Regions are primarily LUMINOSITY patches, not gravity wells.
+      // Particles stay near home; they glow when inside a region.
+      // A small tangential nudge creates subtle densification without
+      // ripping the sphere apart.
       var pullX = 0, pullY = 0, pullZ = 0;
       var maxStrength = 0;
       for (var r = 0; r < regions.length; r++) {
         var reg = regions[r];
         if (reg.weight < 0.01) continue;
         var dotR = p.nx * reg.nx + p.ny * reg.ny + p.nz * reg.nz;
-        if (dotR > 0.55) {
-          var t = (dotR - 0.55) / 0.40;
+        if (dotR > 0.70) {
+          var t = (dotR - 0.70) / 0.27;
           if (t > 1) t = 1;
-          t = t * t * (3 - 2 * t);          // smoothstep falloff
+          t = t * t * (3 - 2 * t);          // smoothstep falloff — tight hotspot
           var strength = t * reg.weight;
           if (strength > maxStrength) maxStrength = strength;
-          // Pull vector toward region center
-          pullX += (reg.nx - p.nx) * strength * 0.65;
-          pullY += (reg.ny - p.ny) * strength * 0.65;
-          pullZ += (reg.nz - p.nz) * strength * 0.65;
+          // Gentle pull — subtle densification, not clump formation
+          pullX += (reg.nx - p.nx) * strength * 0.18;
+          pullY += (reg.ny - p.ny) * strength * 0.18;
+          pullZ += (reg.nz - p.nz) * strength * 0.18;
         }
       }
 
@@ -339,15 +343,16 @@
       nx /= L; ny /= L; nz /= L;
 
       // ── Radial modulation ───────────────────────────────
-      // Active particles pop outward (neuron firing look)
-      // Inactive particles disperse outward in proportion to total
-      // region activity (equal action/reaction — cloud mass balance)
+      // Subtle. Active particles pop outward a tiny bit (barely past
+      // the shell). Inactive particles disperse almost imperceptibly
+      // in proportion to total region activity — the reaction is
+      // present but doesn't drain the sphere.
       var radialPulse = Math.sin(time * 1.15 * p.sp2 + p.ph1) * 0.055 * (1 + smoothTurb);
       var radialMod;
       if (maxStrength > 0.05) {
-        radialMod = maxStrength * 0.22;
+        radialMod = maxStrength * 0.06;
       } else if (totalRegW > 0.1) {
-        radialMod = Math.min(totalRegW, 2) * 0.09;
+        radialMod = Math.min(totalRegW, 2) * 0.025;
       } else {
         radialMod = 0;
       }
@@ -369,9 +374,11 @@
       else if (p.layer === 1) { sizeBase = 0.30; layerMul = 0.92; }  // shell
       else                    { sizeBase = 0.27; layerMul = 0.58; }  // wispy
 
-      // Region boost — lit particles get bright + bigger
-      var regionBright = 1 + maxStrength * 1.6;
-      var regionSize = 1 + maxStrength * 0.9;
+      // Region boost — brightness is now the PRIMARY tell that a region
+      // is active. Lit particles get much brighter + visibly fatter
+      // while staying in their home positions.
+      var regionBright = 1 + maxStrength * 2.8;
+      var regionSize = 1 + maxStrength * 1.4;
 
       var alpha = (0.08 + depth * 0.42) * p.br * brightness * layerMul * regionBright;
       if (alpha < 0.018) continue;
