@@ -127,14 +127,14 @@
       unloadPageCSS(currentRoute);
     }
 
-    // Swap content — trusted first-party HTML fragments only
-    main.innerHTML = html;
-
-    // Load page CSS
+    // Enable CSS before injecting HTML to eliminate flash of unstyled content.
+    // Two rAF ticks let the browser parse + apply the stylesheet first.
     loadPageCSS(route);
-
-    // Apply theme
     applyTheme(route);
+    await new Promise(function (r) { requestAnimationFrame(function () { requestAnimationFrame(r); }); });
+
+    // Swap content — trusted first-party HTML fragments only
+    main.innerHTML = html; // nosec: trusted same-origin static fragments, no user input
 
     // Update title
     document.title = TITLE_MAP[route] || 'Clipboard Vault';
