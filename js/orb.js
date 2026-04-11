@@ -85,62 +85,59 @@
     switch (orbState) {
       case 'connecting':
         targetExpand  = 0;
-        targetMicro   = 0.018;
+        targetMicro   = 0.055;   // visible wander at rest
         targetBreathe = 0.055;
         break;
 
       case 'listening':
-        // sqrt so quiet voice = gentle swell, loud = full expansion
         var v = Math.sqrt(voiceLevel);
         targetExpand  = v * 0.40;
-        targetMicro   = 0.022 + v * 0.018;
+        targetMicro   = 0.065 + v * 0.025; // more alive when hearing voice
         targetBreathe = 0.040;
         break;
 
       case 'speaking':
         targetExpand  = 0.30;
-        targetMicro   = 0.035;
+        targetMicro   = 0.080;   // most active
         targetBreathe = 0.065;
         break;
 
       case 'thinking':
         targetExpand  = 0;
-        targetMicro   = 0.012;
+        targetMicro   = 0.035;   // calm but still alive
         targetBreathe = 0.030;
         r = 110; g = 100; b = 230;
         break;
 
       case 'error':
         targetExpand  = 0;
-        targetMicro   = 0.008;
+        targetMicro   = 0.020;
         targetBreathe = 0.020;
         r = 255; g = 59; b = 48;
         break;
     }
 
-    // Global breath — slow sine, all particles share this
+    // Global breath — slow sine, all particles share this (collective mind)
     var breathOffset = smoothBreathe * Math.sin(time * 0.45);
-
     var rad = baseRadius * (1 + smoothExpand + breathOffset);
 
-    // ── Project points (no rotation — static orientation) ─────
+    // ── Project points ────────────────────────────────────────
     var proj = new Array(N);
     for (var i = 0; i < N; i++) {
       var p = pts[i];
 
-      // Each particle drifts independently with three overlapping oscillations
-      // Different frequencies at irrational ratios → never fully repeats
-      var micro =
-        smoothMicro * 0.55 * Math.sin(time * 0.71 * p.s1 + p.p1) +
-        smoothMicro * 0.30 * Math.cos(time * 1.37 * p.s2 + p.p2) +
-        smoothMicro * 0.15 * Math.sin(time * 2.09        + p.p3);
-
-      var rr = 1 + micro;
+      // Individual mind: each particle wanders freely in world-space x/y/z
+      // Two overlapping sine waves at irrational ratio per axis → smooth,
+      // never-repeating, unique path for every particle
+      var d = smoothMicro * rad;
+      var ox = d * (0.62 * Math.sin(time * 0.53 * p.s1 + p.p1) + 0.38 * Math.cos(time * 1.17 * p.s2 + p.p2));
+      var oy = d * (0.62 * Math.sin(time * 0.71 * p.s2 + p.p2) + 0.38 * Math.cos(time * 0.89 * p.s1 + p.p3));
+      var oz = d * (0.62 * Math.sin(time * 0.61 * p.s1 + p.p3) + 0.38 * Math.cos(time * 1.33 * p.s2 + p.p1));
 
       proj[i] = {
-        sx: cx + p.nx * rr * rad,
-        sy: cy + p.ny * rr * rad,
-        z:       p.nz * rr          // depth for size/opacity — no rotation
+        sx: cx + p.nx * rad + ox,
+        sy: cy + p.ny * rad + oy,
+        z:       p.nz * rad + oz   // depth for size/opacity
       };
     }
 
