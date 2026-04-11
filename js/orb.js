@@ -37,7 +37,7 @@
   var rotY = 0;
   var ROT_SPEED = 0.11;
 
-  var N = 3800;
+  var N = 6000;
   var pts = [];
 
   // Pale lavender-purple base
@@ -119,7 +119,7 @@
       var pos = sampleInCone(d.nx, d.ny, d.nz, 0.9);
       region.temps.push({
         nx: pos.nx, ny: pos.ny, nz: pos.nz,
-        r0: 0.94 + Math.random() * 0.11,     // 0.94–1.05 — matches main shell spread
+        r0: 1.06 + Math.random() * 0.14,     // 1.06–1.20 — lands outside the main shell
         ph: Math.random() * Math.PI * 2,
         sp: 0.70 + Math.random() * 0.50,
         br: 0.55 + Math.random() * 0.50,     // matches main-particle br range
