@@ -19,7 +19,7 @@
   var orbState = 'idle';
   var raf = null;
 
-  var N = 1000;
+  var N = 2500;
   var pts = [];
 
   function init() {
@@ -43,6 +43,8 @@
         // Oscillation speed multipliers — slight variation so motion isn't uniform
         s1: 0.85 + Math.random() * 0.3,
         s2: 0.85 + Math.random() * 0.3,
+        // Random hue per particle — full spectrum
+        h: Math.floor(Math.random() * 360),
       });
     }
 
@@ -74,9 +76,9 @@
     // Asymmetric easing: fast attack AND fast decay → rhythmic pulse per syllable
     var voiceAttack = targetVoice > voiceLevel ? 0.18 : 0.14;
     var expandAttack = targetExpand > smoothExpand ? 0.16 : 0.13;
-    voiceLevel   = lerp(voiceLevel,   targetVoice,  voiceAttack);
+    voiceLevel = lerp(voiceLevel, targetVoice, voiceAttack);
     smoothExpand = lerp(smoothExpand, targetExpand, expandAttack);
-    smoothMicro   = lerp(smoothMicro,   targetMicro,   0.025); // slow — organic feel
+    smoothMicro = lerp(smoothMicro, targetMicro, 0.025); // slow — organic feel
     smoothBreathe = lerp(smoothBreathe, targetBreathe, 0.018); // slow — organic feel
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -86,34 +88,34 @@
 
     switch (orbState) {
       case 'connecting':
-        targetExpand  = 0;
-        targetMicro   = 0.50;
+        targetExpand = 0;
+        targetMicro = 0.50;
         targetBreathe = 0.055;
         break;
 
       case 'listening':
         var v = Math.sqrt(voiceLevel);
-        targetExpand  = v * 0.55;
-        targetMicro   = 0.55 + v * 0.20;
+        targetExpand = v * 0.55;
+        targetMicro = 0.55 + v * 0.20;
         targetBreathe = 0.040;
         break;
 
       case 'speaking':
-        targetExpand  = 0.30;
-        targetMicro   = 0.70;
+        targetExpand = 0.30;
+        targetMicro = 0.70;
         targetBreathe = 0.065;
         break;
 
       case 'thinking':
-        targetExpand  = 0;
-        targetMicro   = 0.35;
+        targetExpand = 0;
+        targetMicro = 0.35;
         targetBreathe = 0.030;
         r = 110; g = 100; b = 230;
         break;
 
       case 'error':
-        targetExpand  = 0;
-        targetMicro   = 0.20;
+        targetExpand = 0;
+        targetMicro = 0.20;
         targetBreathe = 0.020;
         r = 255; g = 59; b = 48;
         break;
@@ -139,7 +141,8 @@
       proj[i] = {
         sx: cx + p.nx * rad + ox,
         sy: cy + p.ny * rad + oy,
-        z:       p.nz + oz / rad   // normalised depth (-1..1) for size/opacity
+        z: p.nz + oz / rad,  // normalised depth (-1..1) for size/opacity
+        h: p.h
       };
     }
 
@@ -154,10 +157,10 @@
     ctx.arc(cx, cy, atmR, 0, Math.PI * 2);
     ctx.clip();
     var atm = ctx.createRadialGradient(cx, cy, 0, cx, cy, atmR);
-    atm.addColorStop(0,   'rgba(60,100,255,' + Math.min(0.30, atmA).toFixed(2) + ')');
+    atm.addColorStop(0, 'rgba(60,100,255,' + Math.min(0.30, atmA).toFixed(2) + ')');
     atm.addColorStop(0.4, 'rgba(40,70,220,0.10)');
-    atm.addColorStop(0.75,'rgba(30,55,200,0.04)');
-    atm.addColorStop(1,   'rgba(20,40,180,0)');
+    atm.addColorStop(0.75, 'rgba(30,55,200,0.04)');
+    atm.addColorStop(1, 'rgba(20,40,180,0)');
     ctx.beginPath();
     ctx.arc(cx, cy, atmR, 0, Math.PI * 2);
     ctx.fillStyle = atm;
@@ -172,27 +175,31 @@
 
     // ── Layer 2: Core glow — blue, voice-reactive ─────────────
     // Dim blue ember at rest, blazes when speaking
-    var coreA  = 0.08 + voiceLevel * 0.38;
-    var coreR  = rad * (0.45 + voiceLevel * 0.25);
+    var coreA = 0.08 + voiceLevel * 0.38;
+    var coreR = rad * (0.45 + voiceLevel * 0.25);
     var core = ctx.createRadialGradient(cx, cy, 0, cx, cy, coreR);
-    core.addColorStop(0,   'rgba(80,140,255,' + Math.min(0.55, coreA).toFixed(2) + ')');
+    core.addColorStop(0, 'rgba(80,140,255,' + Math.min(0.55, coreA).toFixed(2) + ')');
     core.addColorStop(0.4, 'rgba(50,100,240,' + (coreA * 0.4).toFixed(2) + ')');
-    core.addColorStop(1,   'rgba(30,60,200,0)');
+    core.addColorStop(1, 'rgba(30,60,200,0)');
     ctx.beginPath();
     ctx.arc(cx, cy, coreR, 0, Math.PI * 2);
     ctx.fillStyle = core;
     ctx.fill();
 
-    // ── Layer 3: Particles (white dots) ───────────────────────
+    // ── Layer 3: Particles ────────────────────────────────────
+    var useStateColor = (orbState === 'thinking' || orbState === 'error');
     for (var j = 0; j < N; j++) {
       var pt = proj[j];
       var depth = (pt.z + 1.3) / 2.6;                     // 0..1
       var dotSize = (0.15 + depth * 0.38) * dpr;
       var alpha = Math.max(0, 0.05 + depth * 0.88);
+      var color = useStateColor
+        ? 'rgba(' + r + ',' + g + ',' + b + ',' + alpha.toFixed(2) + ')'
+        : 'hsla(' + pt.h + ',100%,80%,' + alpha.toFixed(2) + ')';
 
       ctx.beginPath();
       ctx.arc(pt.sx, pt.sy, dotSize, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + alpha.toFixed(2) + ')';
+      ctx.fillStyle = color;
       ctx.fill();
     }
 
