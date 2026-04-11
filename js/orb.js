@@ -1,6 +1,6 @@
 /* ── Particle Sphere Orb ─────────────────────────────────────
-   No rotation. Each particle oscillates independently — organic,
-   living feel. Voice drives radial expansion from the inside out.
+   Neural globe: particles connected by lines on a sphere surface.
+   Voice drives expansion; regions light up on speech.
 
      orbSetState(state)   — 'idle'|'connecting'|'listening'|'speaking'|'thinking'|'error'
      orbSetVoice(0..1)    — speech probability from VAD
@@ -20,12 +20,11 @@
   var raf = null;
 
   // ── Neural activation regions ─────────────────────────────
-  // Each region drifts slowly to a new target; weight fades in/out
   var MAX_REGIONS = 3;
   var regions = [];
   var nextRegionSwap = 0;
-  var REGION_LERP = 0.012;   // position lerp — slow wavy drift toward target
-  var REGION_FADE = 0.015;   // weight lerp — gentle fade in/out
+  var REGION_LERP = 0.012;
+  var REGION_FADE = 0.015;
 
   function randomSpherePoint() {
     var u = Math.random() * 2 - 1;
@@ -47,7 +46,7 @@
   }
 
   function snapRegions() {
-    var count = 2 + (Math.random() < 0.35 ? 1 : 0); // 2 or occasionally 3
+    var count = 2 + (Math.random() < 0.35 ? 1 : 0);
     for (var i = 0; i < MAX_REGIONS; i++) {
       if (i < count) {
         var pt = randomSpherePoint();
@@ -66,8 +65,13 @@
     for (var i = 0; i < regions.length; i++) regions[i].targetWeight = 0;
   }
 
-  var N = 2500;
+  // ── Particles + edges ─────────────────────────────────────
+  var N = 400;
   var pts = [];
+  var edges = []; // precomputed from sphere topology — drawn as lines each frame
+
+  var CONNECTION_DOT = 0.93;   // cos(~22°) — sphere surface neighbors
+  var MAX_EDGES_PER = 7;       // cap so no single node dominates
 
   function init() {
     canvas = document.getElementById('voice-orb-canvas');
@@ -76,7 +80,7 @@
 
     initRegions();
 
-    // Fibonacci sphere + unique random phase per particle for independent motion
+    // Fibonacci sphere — even surface distribution
     var gr = (1 + Math.sqrt(5)) / 2;
     for (var i = 0; i < N; i++) {
       var theta = Math.acos(1 - 2 * (i + 0.5) / N);
@@ -85,14 +89,26 @@
         nx: Math.sin(theta) * Math.cos(phi),
         ny: Math.sin(theta) * Math.sin(phi),
         nz: Math.cos(theta),
-        // Three independent oscillation phases — makes each particle unique
         p1: Math.random() * Math.PI * 2,
         p2: Math.random() * Math.PI * 2,
         p3: Math.random() * Math.PI * 2,
-        // Oscillation speed multipliers — slight variation so motion isn't uniform
         s1: 0.85 + Math.random() * 0.3,
         s2: 0.85 + Math.random() * 0.3,
+        ec: 0, // edge count
       });
+    }
+
+    // Build edge list once from sphere topology
+    for (var i = 0; i < N; i++) {
+      for (var j = i + 1; j < N; j++) {
+        if (pts[i].ec >= MAX_EDGES_PER || pts[j].ec >= MAX_EDGES_PER) continue;
+        var dot = pts[i].nx * pts[j].nx + pts[i].ny * pts[j].ny + pts[i].nz * pts[j].nz;
+        if (dot > CONNECTION_DOT) {
+          edges.push({ i: i, j: j });
+          pts[i].ec++;
+          pts[j].ec++;
+        }
+      }
     }
 
     resize();
@@ -120,21 +136,20 @@
     raf = requestAnimationFrame(tick);
     time += 0.016;
 
-    // Asymmetric easing: fast attack AND fast decay → rhythmic pulse per syllable
+    // Asymmetric easing — fast attack AND fast decay for voice pulse
     var voiceAttack = targetVoice > voiceLevel ? 0.18 : 0.14;
     var expandAttack = targetExpand > smoothExpand ? 0.16 : 0.13;
     voiceLevel = lerp(voiceLevel, targetVoice, voiceAttack);
     smoothExpand = lerp(smoothExpand, targetExpand, expandAttack);
-    smoothMicro = lerp(smoothMicro, targetMicro, 0.025); // slow — organic feel
-    smoothBreathe = lerp(smoothBreathe, targetBreathe, 0.018); // slow — organic feel
+    smoothMicro = lerp(smoothMicro, targetMicro, 0.025);
+    smoothBreathe = lerp(smoothBreathe, targetBreathe, 0.018);
 
-    // ── Update region positions and weights (every frame) ────
+    // Lerp region positions and weights every frame
     for (var ri = 0; ri < regions.length; ri++) {
       var reg = regions[ri];
       reg.nx = lerp(reg.nx, reg.tnx, REGION_LERP);
       reg.ny = lerp(reg.ny, reg.tny, REGION_LERP);
       reg.nz = lerp(reg.nz, reg.tnz, REGION_LERP);
-      // Normalize to stay on unit sphere after lerp
       var rlen = Math.sqrt(reg.nx * reg.nx + reg.ny * reg.ny + reg.nz * reg.nz);
       if (rlen > 0.001) { reg.nx /= rlen; reg.ny /= rlen; reg.nz /= rlen; }
       reg.weight = lerp(reg.weight, reg.targetWeight, REGION_FADE);
@@ -143,7 +158,7 @@
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // ── State parameters ──────────────────────────────────────
-    var r = 255, g = 255, b = 255;
+    var rr = 160, gg = 220, bb = 255; // default: cyan-white
 
     switch (orbState) {
       case 'connecting':
@@ -155,13 +170,13 @@
       case 'listening':
         var v = Math.sqrt(voiceLevel);
         targetExpand = v * 0.55;
-        targetMicro = 0.55 + v * 0.20;
+        targetMicro = 0.25 + v * 0.20;
         targetBreathe = 0.040;
         break;
 
       case 'speaking':
-        targetExpand = 0.30;
-        targetMicro = 0.70;
+        targetExpand = 0.35;
+        targetMicro = 0.40;
         targetBreathe = 0.065;
         break;
 
@@ -169,22 +184,21 @@
         targetExpand = 0;
         targetMicro = 0.175;
         targetBreathe = 0.030;
-        r = 110; g = 100; b = 230;
+        rr = 130; gg = 110; bb = 255;
         break;
 
       case 'error':
         targetExpand = 0;
         targetMicro = 0.10;
         targetBreathe = 0.020;
-        r = 255; g = 59; b = 48;
+        rr = 255; gg = 80; bb = 60;
         break;
     }
 
-    // Global breath — slow sine, all particles share this (collective mind)
     var breathOffset = smoothBreathe * Math.sin(time * 0.45);
     var rad = baseRadius * (1 + smoothExpand + breathOffset);
 
-    // ── Neural region swap — fires on any speech, VAD-gated upstream ──
+    // Neural region swap — VAD-gated
     var isSpeaking = voiceLevel > 0.05;
     if (isSpeaking) {
       if (time > nextRegionSwap) snapRegions();
@@ -192,125 +206,110 @@
       fadeOutRegions();
     }
 
-    // ── Project points ────────────────────────────────────────
-    var proj = new Array(N);
+    // ── Project all particles ─────────────────────────────────
+    var projByIdx = new Array(N);
     for (var i = 0; i < N; i++) {
       var p = pts[i];
-
       var d = smoothMicro * rad;
       var ox = d * (0.62 * Math.sin(time * 0.53 * p.s1 + p.p1) + 0.38 * Math.cos(time * 1.17 * p.s2 + p.p2));
       var oy = d * (0.62 * Math.sin(time * 0.71 * p.s2 + p.p2) + 0.38 * Math.cos(time * 0.89 * p.s1 + p.p3));
       var oz = d * (0.62 * Math.sin(time * 0.61 * p.s1 + p.p3) + 0.38 * Math.cos(time * 1.33 * p.s2 + p.p1));
 
-      // ── Region attraction — gentle pull into active "continents" ──
+      // Region attraction — gentle pull toward active continents
       for (var ri = 0; ri < regions.length; ri++) {
         var reg = regions[ri];
         if (reg.weight < 0.01) continue;
         var dot = p.nx * reg.nx + p.ny * reg.ny + p.nz * reg.nz;
-
         if (dot > 0.3) {
-          // Inside the region — smoothly pull toward region centre
-          var pull = ((dot - 0.3) / 0.7) * 0.35 * rad * reg.weight;
+          var pull = ((dot - 0.3) / 0.7) * 0.30 * rad * reg.weight;
           ox += (reg.nx - p.nx) * pull;
           oy += (reg.ny - p.ny) * pull;
           oz += (reg.nz - p.nz) * pull;
         }
       }
 
-      proj[i] = {
+      projByIdx[i] = {
         sx: cx + p.nx * rad + ox,
         sy: cy + p.ny * rad + oy,
         z: p.nz + oz / rad,
       };
     }
 
-    // Sort back-to-front
-    proj.sort(function (a, b) { return a.z - b.z; });
+    // Depth-sorted copy for particle rendering
+    var sorted = projByIdx.slice().sort(function (a, b) { return a.z - b.z; });
 
-    // ── Layer 1: Outer atmosphere — clipped to circle, expands with rad ──
-    var atmR = rad * 1.55;
-    var atmA = 0.22 + breathOffset * 0.4 + voiceLevel * 0.10;
+    // ── Everything inside sphere clip ─────────────────────────
     ctx.save();
     ctx.beginPath();
-    ctx.arc(cx, cy, atmR, 0, Math.PI * 2);
-    ctx.clip();
-    var atm = ctx.createRadialGradient(cx, cy, 0, cx, cy, atmR);
-    atm.addColorStop(0, 'rgba(60,100,255,' + Math.min(0.30, atmA).toFixed(2) + ')');
-    atm.addColorStop(0.4, 'rgba(40,70,220,0.10)');
-    atm.addColorStop(0.75, 'rgba(30,55,200,0.04)');
-    atm.addColorStop(1, 'rgba(20,40,180,0)');
-    ctx.beginPath();
-    ctx.arc(cx, cy, atmR, 0, Math.PI * 2);
-    ctx.fillStyle = atm;
-    ctx.fill();
-    ctx.restore();
-
-    // ── Clip to circle — particles stay spherical ─────────────
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(cx, cy, rad * 1.15, 0, Math.PI * 2);
+    ctx.arc(cx, cy, rad * 1.12, 0, Math.PI * 2);
     ctx.clip();
 
-    // ── Layer 2: Core glow — blue, voice-reactive ─────────────
-    var coreA = 0.08 + voiceLevel * 0.38;
-    var coreR = rad * (0.45 + voiceLevel * 0.25);
+    // ── Layer 1: Core glow — subtle blue ember ────────────────
+    var coreA = 0.06 + voiceLevel * 0.30;
+    var coreR = rad * (0.38 + voiceLevel * 0.22);
     var core = ctx.createRadialGradient(cx, cy, 0, cx, cy, coreR);
-    core.addColorStop(0, 'rgba(80,140,255,' + Math.min(0.55, coreA).toFixed(2) + ')');
-    core.addColorStop(0.4, 'rgba(50,100,240,' + (coreA * 0.4).toFixed(2) + ')');
-    core.addColorStop(1, 'rgba(30,60,200,0)');
+    core.addColorStop(0, 'rgba(80,160,255,' + Math.min(0.50, coreA).toFixed(2) + ')');
+    core.addColorStop(0.5, 'rgba(50,110,240,' + (coreA * 0.35).toFixed(2) + ')');
+    core.addColorStop(1, 'rgba(20,70,210,0)');
     ctx.beginPath();
     ctx.arc(cx, cy, coreR, 0, Math.PI * 2);
     ctx.fillStyle = core;
     ctx.fill();
 
-    // ── Layer 2b: Neural region glows — country-sized diffuse patches ──
+    // ── Layer 2: Region glows — continent highlights ──────────
     for (var ri = 0; ri < regions.length; ri++) {
       var reg = regions[ri];
       var w = reg.weight;
       if (w < 0.01) continue;
-
       var rsx = cx + reg.nx * rad;
       var rsy = cy + reg.ny * rad;
-
-      // Subtle diffuse trail from core toward region
-      var trailAngleX = (rsx - cx) / rad;
-      var trailAngleY = (rsy - cy) / rad;
-      var trail = ctx.createRadialGradient(
-        cx + trailAngleX * rad * 0.2, cy + trailAngleY * rad * 0.2, 0,
-        cx, cy, rad
-      );
-      trail.addColorStop(0,   'rgba(80,140,255,' + (0.10 * w).toFixed(2) + ')');
-      trail.addColorStop(0.6, 'rgba(60,110,240,' + (0.03 * w).toFixed(2) + ')');
-      trail.addColorStop(1,   'rgba(40,80,220,0)');
-      ctx.beginPath();
-      ctx.arc(cx, cy, rad, 0, Math.PI * 2);
-      ctx.fillStyle = trail;
-      ctx.fill();
-
-      // Large diffuse glow at region surface — continent-sized, soft falloff
-      var spotR = rad * 0.65;
+      var spotR = rad * 0.50;
       var spot = ctx.createRadialGradient(rsx, rsy, 0, rsx, rsy, spotR);
-      spot.addColorStop(0,   'rgba(160,220,255,' + (0.30 * w).toFixed(2) + ')');
-      spot.addColorStop(0.3, 'rgba(100,170,255,' + (0.15 * w).toFixed(2) + ')');
-      spot.addColorStop(0.6, 'rgba(60,120,240,' + (0.06 * w).toFixed(2) + ')');
-      spot.addColorStop(1,   'rgba(40,80,220,0)');
+      spot.addColorStop(0,   'rgba(' + rr + ',' + gg + ',' + bb + ',' + (0.22 * w).toFixed(2) + ')');
+      spot.addColorStop(0.4, 'rgba(' + rr + ',' + gg + ',' + bb + ',' + (0.08 * w).toFixed(2) + ')');
+      spot.addColorStop(1,   'rgba(' + rr + ',' + gg + ',' + bb + ',0)');
       ctx.beginPath();
       ctx.arc(rsx, rsy, spotR, 0, Math.PI * 2);
       ctx.fillStyle = spot;
       ctx.fill();
     }
 
-    // ── Layer 3: Particles — white (or state color) ───────────
-    for (var j = 0; j < N; j++) {
-      var pt = proj[j];
-      var depth = (pt.z + 1.3) / 2.6;                     // 0..1
-      var dotSize = (0.15 + depth * 0.38) * dpr;
-      var alpha = Math.max(0, 0.05 + depth * 0.88);
-      var color = 'rgba(' + r + ',' + g + ',' + b + ',' + alpha.toFixed(2) + ')';
+    // ── Layer 3: Connection lines — 3 depth passes ────────────
+    // Batch by depth bin: back (dim) → mid → front (bright)
+    // 3 stroke() calls instead of one per edge for performance
+    var lineBins = [
+      { minZ: -2.0, maxZ: -0.15, alpha: 0.06, width: 0.35 },
+      { minZ: -0.15, maxZ:  0.35, alpha: 0.16, width: 0.45 },
+      { minZ:  0.35, maxZ:  2.0,  alpha: 0.38, width: 0.60 },
+    ];
+    var voiceMod = 0.7 + voiceLevel * 0.6;
 
+    for (var bin = 0; bin < lineBins.length; bin++) {
+      var lb = lineBins[bin];
+      ctx.strokeStyle = 'rgba(' + rr + ',' + gg + ',' + bb + ',' + (lb.alpha * voiceMod).toFixed(2) + ')';
+      ctx.lineWidth = lb.width * dpr;
+      ctx.beginPath();
+      for (var e = 0; e < edges.length; e++) {
+        var pa = projByIdx[edges[e].i];
+        var pb = projByIdx[edges[e].j];
+        var avgZ = (pa.z + pb.z) * 0.5;
+        if (avgZ >= lb.minZ && avgZ < lb.maxZ) {
+          ctx.moveTo(pa.sx, pa.sy);
+          ctx.lineTo(pb.sx, pb.sy);
+        }
+      }
+      ctx.stroke();
+    }
+
+    // ── Layer 4: Particles — depth-sorted, size varies ────────
+    for (var j = 0; j < N; j++) {
+      var pt = sorted[j];
+      var depth = (pt.z + 1.3) / 2.6;              // 0..1
+      var dotSize = (0.35 + depth * 1.4) * dpr;    // back=tiny, front=prominent
+      var alpha = Math.max(0, 0.08 + depth * 0.90);
       ctx.beginPath();
       ctx.arc(pt.sx, pt.sy, dotSize, 0, Math.PI * 2);
-      ctx.fillStyle = color;
+      ctx.fillStyle = 'rgba(' + rr + ',' + gg + ',' + bb + ',' + alpha.toFixed(2) + ')';
       ctx.fill();
     }
 
