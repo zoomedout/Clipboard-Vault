@@ -663,6 +663,16 @@ async function startMicCapture() {
       var workletNode = new AudioWorkletNode(liveAudioCtx, 'mic-processor');
       workletNode.port.onmessage = function (e) {
         sendPcmToWs(e.data);
+        // RMS amplitude → orb, gated by VAD so background noise is ignored
+        if (window.orbSetVoice && liveSpeaking) {
+          var buf = new Int16Array(e.data);
+          var sum = 0;
+          for (var k = 0; k < buf.length; k++) sum += buf[k] * buf[k];
+          var rms = Math.sqrt(sum / buf.length) / 32768; // 0..1
+          orbSetVoice(Math.min(1, rms * 7));             // scale up for visibility
+        } else if (window.orbSetVoice) {
+          orbSetVoice(0);
+        }
       };
       source.connect(workletNode);
       workletNode.connect(liveAudioCtx.destination);
@@ -757,9 +767,7 @@ async function startVad() {
           setVoiceState('thinking');
         }
       },
-      onFrameProcessed: function (probs) {
-        if (window.orbSetVoice) orbSetVoice(probs.isSpeech);
-      }
+      onFrameProcessed: function (probs) { }
     });
     liveVad.start();
     devLog('ok', 'Voice: Silero VAD started');

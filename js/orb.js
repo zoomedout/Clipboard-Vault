@@ -146,10 +146,13 @@
     // Sort back-to-front
     proj.sort(function (a, b) { return a.z - b.z; });
 
-    // ── Layer 1: Outer atmosphere — always on, expands with rad ──
-    // Sits outside the clip so it bleeds softly beyond the particle sphere
+    // ── Layer 1: Outer atmosphere — clipped to circle, expands with rad ──
     var atmR = rad * 1.55;
     var atmA = 0.22 + breathOffset * 0.4 + voiceLevel * 0.10;
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, atmR, 0, Math.PI * 2);
+    ctx.clip();
     var atm = ctx.createRadialGradient(cx, cy, 0, cx, cy, atmR);
     atm.addColorStop(0,   'rgba(60,100,255,' + Math.min(0.30, atmA).toFixed(2) + ')');
     atm.addColorStop(0.4, 'rgba(40,70,220,0.10)');
@@ -159,6 +162,7 @@
     ctx.arc(cx, cy, atmR, 0, Math.PI * 2);
     ctx.fillStyle = atm;
     ctx.fill();
+    ctx.restore();
 
     // ── Clip to circle — particles stay spherical ─────────────
     ctx.save();
