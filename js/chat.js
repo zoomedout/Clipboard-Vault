@@ -1,5 +1,5 @@
 /* ── Mock voice mode (set true to test orb UI without Gemini) ── */
-var MOCK_VOICE = false;
+var MOCK_VOICE = true;
 
 /* ── Scroll fade-in observer ── */
 var observer = new IntersectionObserver(function (entries) {
@@ -437,6 +437,7 @@ var liveConnected = false;
 var livePlaybackSources = [];    // active BufferSource nodes for granular stop
 var liveVad = null;              // Silero VAD instance for speech detection
 var liveSpeaking = false;        // true when VAD detects user is speaking
+var liveVadProb = 0;             // continuous VAD speech probability (0..1), per frame
 var liveTurnCount = 0;           // number of completed Gemini turns (for AEC calibration)
 var liveUserHasSpoken = false;   // true after first real speech in this session
 var liveSpeechStartTime = 0;     // timestamp when current speech started
@@ -663,15 +664,20 @@ async function startMicCapture() {
       var workletNode = new AudioWorkletNode(liveAudioCtx, 'mic-processor');
       workletNode.port.onmessage = function (e) {
         sendPcmToWs(e.data);
-        // RMS amplitude → orb, gated by VAD so background noise is ignored
-        if (window.orbSetVoice && liveSpeaking) {
+        // RMS amplitude × soft VAD gate → orb. Soft gate (not hard on/off)
+        // so the orb rides the voice envelope naturally without clamping to
+        // zero between words.
+        if (window.orbSetVoice) {
           var buf = new Int16Array(e.data);
           var sum = 0;
           for (var k = 0; k < buf.length; k++) sum += buf[k] * buf[k];
           var rms = Math.sqrt(sum / buf.length) / 32768; // 0..1
-          orbSetVoice(Math.min(1, rms * 7));             // scale up for visibility
-        } else if (window.orbSetVoice) {
-          orbSetVoice(0);
+          var amp = Math.min(1, rms * 9);
+          // If VAD is loaded, gate by speech probability (0.15 floor so a
+          // tiny residual signal keeps the orb alive through silence gaps).
+          // If VAD failed to load, pass raw amplitude.
+          var gate = liveVad ? (0.15 + 0.85 * liveVadProb) : 1;
+          orbSetVoice(amp * gate);
         }
       };
       source.connect(workletNode);
@@ -767,7 +773,14 @@ async function startVad() {
           setVoiceState('thinking');
         }
       },
-      onFrameProcessed: function (probs) { }
+      onFrameProcessed: function (probs) {
+        // Silero frame probabilities: { isSpeech, notSpeech }. We store
+        // isSpeech as a continuous 0..1 signal used to soft-gate the orb
+        // reactivity (see worklet onmessage above).
+        if (probs && typeof probs.isSpeech === 'number') {
+          liveVadProb = probs.isSpeech;
+        }
+      }
     });
     liveVad.start();
     devLog('ok', 'Voice: Silero VAD started');
@@ -823,6 +836,7 @@ function cleanupLiveResources() {
     liveVad.pause();
     liveVad = null;
     liveSpeaking = false;
+    liveVadProb = 0;
     liveTurnCount = 0;
     liveUserHasSpoken = false;
   }
