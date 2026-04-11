@@ -19,7 +19,7 @@
   var orbState = 'idle';
   var raf = null;
 
-  var N = 500;
+  var N = 1000;
   var pts = [];
 
   function init() {
