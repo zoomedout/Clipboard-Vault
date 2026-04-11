@@ -1,10 +1,11 @@
-/* ── J.A.R.V.I.S. Neural Sphere ───────────────────────────────
-   A rigid geodesic mesh: nodes locked to a sphere surface,
-   connected by triangulated edges. Slowly auto-rotates on Y.
-   Voice drives activation pulses that propagate across the mesh.
+/* ── Ethereal AI Cloud ──────────────────────────────────────
+   Siri-style dense particle cloud. Three density layers —
+   glowing core, main shell, wispy outer halo — animated with
+   per-particle wobble and rendered with additive blending so
+   dense regions sum to bright and sparse regions fade soft.
 
      orbSetState(state)   — 'idle'|'connecting'|'listening'|'speaking'|'thinking'|'error'
-     orbSetVoice(0..1)    — speech probability from VAD
+     orbSetVoice(0..1)    — speech amplitude from VAD
    ─────────────────────────────────────────────────────────── */
 (function () {
   'use strict';
@@ -14,68 +15,79 @@
 
   var voiceLevel = 0, targetVoice = 0;
   var smoothExpand = 0, targetExpand = 0;
-  var smoothBreathe = 0.015, targetBreathe = 0.015;
+  var smoothTurb = 0.10, targetTurb = 0.10;
+  var smoothBreathe = 0.020, targetBreathe = 0.020;
+  var smoothEnergy = 0.35, targetEnergy = 0.35;
 
   var orbState = 'idle';
   var raf = null;
 
-  // Auto-rotation — slow, sci-fi sphere rotation
-  var rotY = 0, rotX = -0.22;
-  var rotYSpeed = 0.14;  // rad/s, gentle
+  var rotY = 0;
+  var ROT_SPEED = 0.11;   // base rad/s — slow drift
 
-  // ── Sphere topology ───────────────────────────────────────
-  var N = 140;                 // node count — clean not crowded
-  var pts = [];                // fixed sphere nodes
-  var adj = [];                // adjacency: adj[i] = [j, k, ...]
-  var edges = [];              // {i, j}
-  var CONNECTION_DOT = 0.865;  // cos(~30°) — triangulated neighbors
-  var MAX_EDGES_PER = 6;
+  var N = 1900;
+  var pts = [];
 
-  // Color palette — J.A.R.V.I.S. pale cyan-white
-  var NODE_R = 190, NODE_G = 230, NODE_B = 255;
+  // Pale cyan-blue base; thinking drifts violet, error drifts red
+  var R = 170, G = 218, B = 255;
+  var curR = R, curG = G, curB = B;
 
-  // ── Activation pulses ─────────────────────────────────────
-  // Each node has an "activation" level that decays over time.
-  // When speaking, random seeds fire, then activation spreads to
-  // neighbors on each tick (neural network signal propagation).
-  var activation = null;       // Float32Array(N)
-  var nextSeedTime = 0;
+  // ── Helpers ──────────────────────────────────────────────
+  function gauss() {
+    // Box-Muller
+    var u = 1 - Math.random(), v = Math.random();
+    return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+  }
 
+  function randDir() {
+    var u = Math.random() * 2 - 1;
+    var phi = Math.random() * Math.PI * 2;
+    var r = Math.sqrt(1 - u * u);
+    return { nx: r * Math.cos(phi), ny: r * Math.sin(phi), nz: u };
+  }
+
+  function lerp(a, b, t) { return a + (b - a) * t; }
+
+  // ── Init ─────────────────────────────────────────────────
   function init() {
     canvas = document.getElementById('voice-orb-canvas');
     if (!canvas) return;
     ctx = canvas.getContext('2d');
 
-    // Fibonacci sphere — even distribution
-    var gr = (1 + Math.sqrt(5)) / 2;
     for (var i = 0; i < N; i++) {
-      var theta = Math.acos(1 - 2 * (i + 0.5) / N);
-      var phi = 2 * Math.PI * i / gr;
-      pts.push({
-        nx: Math.sin(theta) * Math.cos(phi),
-        ny: Math.sin(theta) * Math.sin(phi),
-        nz: Math.cos(theta),
-        ec: 0,
-      });
-      adj.push([]);
-    }
+      var d = randDir();
+      var rOff;
+      var layer;
+      var frac = i / N;
 
-    // Build edges from angular proximity
-    for (var i = 0; i < N; i++) {
-      for (var j = i + 1; j < N; j++) {
-        if (pts[i].ec >= MAX_EDGES_PER || pts[j].ec >= MAX_EDGES_PER) continue;
-        var dot = pts[i].nx * pts[j].nx + pts[i].ny * pts[j].ny + pts[i].nz * pts[j].nz;
-        if (dot > CONNECTION_DOT) {
-          edges.push({ i: i, j: j });
-          adj[i].push(j);
-          adj[j].push(i);
-          pts[i].ec++;
-          pts[j].ec++;
-        }
+      if (frac < 0.15) {
+        // Inner core — clustered near center, gives hot ember
+        rOff = Math.abs(gauss()) * 0.32;
+        layer = 0;
+      } else if (frac < 0.78) {
+        // Main shell — thick gaussian around r=1
+        rOff = 1 + gauss() * 0.13;
+        layer = 1;
+      } else {
+        // Outer halo — wispy, sparse, drives fuzzy edge
+        rOff = 1.05 + Math.abs(gauss()) * 0.35;
+        layer = 2;
       }
-    }
+      if (rOff < 0.05) rOff = 0.05;
+      if (rOff > 1.85) rOff = 1.85;
 
-    activation = new Float32Array(N);
+      pts.push({
+        nx: d.nx, ny: d.ny, nz: d.nz,
+        r0: rOff,
+        layer: layer,
+        ph1: Math.random() * Math.PI * 2,
+        ph2: Math.random() * Math.PI * 2,
+        ph3: Math.random() * Math.PI * 2,
+        sp1: 0.65 + Math.random() * 0.7,
+        sp2: 0.65 + Math.random() * 0.7,
+        br: 0.55 + Math.random() * 0.5,     // brightness variance
+      });
+    }
 
     resize();
     window.addEventListener('resize', resize);
@@ -93,44 +105,10 @@
     canvas.style.height = h + 'px';
     cx = canvas.width / 2;
     cy = canvas.height / 2;
-    baseRadius = Math.min(w, h) * 0.38 * dpr;
+    baseRadius = Math.min(w, h) * 0.30 * dpr;
   }
 
-  function lerp(a, b, t) { return a + (b - a) * t; }
-
-  function fireSeed() {
-    // Pick a node and set its activation to full — will propagate on next ticks.
-    var idx = (Math.random() * N) | 0;
-    activation[idx] = 1;
-    // Also light an immediate neighbor for a nice twin-flash
-    var nb = adj[idx];
-    if (nb.length) activation[nb[(Math.random() * nb.length) | 0]] = 0.9;
-  }
-
-  function propagateActivation(dt) {
-    // Decay all nodes, then transfer a portion of each node's activation to
-    // its neighbors (bounded). Classic threshold-graph propagation.
-    var next = new Float32Array(N);
-    var decay = Math.exp(-dt * 1.9);           // half-life ~0.36s
-    var spread = 1 - Math.exp(-dt * 2.4);      // fraction flowing outward per step
-    for (var i = 0; i < N; i++) {
-      var a = activation[i] * decay;
-      next[i] += a * (1 - spread * 0.55);
-      var nb = adj[i];
-      if (a > 0.05 && nb.length) {
-        var share = (a * spread * 0.55) / nb.length;
-        for (var k = 0; k < nb.length; k++) {
-          next[nb[k]] += share;
-        }
-      }
-    }
-    // Clamp
-    for (var i = 0; i < N; i++) {
-      if (next[i] > 1) next[i] = 1;
-      activation[i] = next[i];
-    }
-  }
-
+  // ── Main tick ────────────────────────────────────────────
   function tick(tMs) {
     raf = requestAnimationFrame(tick);
     if (!lastT) lastT = tMs;
@@ -138,187 +116,130 @@
     lastT = tMs;
     time += dt;
 
-    // Target parameters per state
-    var rr = NODE_R, gg = NODE_G, bb = NODE_B;
-    var speedMult = 1;
-    var fireRate = 0;   // seeds per second
-
+    // ── State-driven targets ────────────────────────────────
+    var tR = R, tG = G, tB = B;
     switch (orbState) {
       case 'connecting':
         targetExpand = 0;
+        targetTurb = 0.14;
         targetBreathe = 0.025;
-        fireRate = 0.8;
-        speedMult = 0.8;
+        targetEnergy = 0.35;
         break;
       case 'listening':
         var v = Math.sqrt(voiceLevel);
-        targetExpand = v * 0.10;
-        targetBreathe = 0.018 + v * 0.020;
-        fireRate = 0.3 + v * 6;
-        speedMult = 1 + v * 0.6;
+        targetExpand = v * 0.18;
+        targetTurb = 0.11 + v * 0.38;
+        targetBreathe = 0.020 + v * 0.018;
+        targetEnergy = 0.38 + v * 0.55;
         break;
       case 'speaking':
-        targetExpand = 0.08;
-        targetBreathe = 0.028;
-        fireRate = 9;
-        speedMult = 1.6;
+        targetExpand = 0.12;
+        targetTurb = 0.34;
+        targetBreathe = 0.035;
+        targetEnergy = 0.92;
         break;
       case 'thinking':
-        targetExpand = 0.02;
-        targetBreathe = 0.018;
-        fireRate = 2.5;
-        rr = 160; gg = 180; bb = 255;
-        speedMult = 0.9;
+        targetExpand = 0.03;
+        targetTurb = 0.17;
+        targetBreathe = 0.022;
+        targetEnergy = 0.48;
+        tR = 150; tG = 175; tB = 255;
         break;
       case 'error':
-        targetExpand = 0;
-        targetBreathe = 0.010;
-        fireRate = 0.5;
-        rr = 255; gg = 95; bb = 85;
-        speedMult = 0.6;
+        targetExpand = -0.05;
+        targetTurb = 0.06;
+        targetBreathe = 0.012;
+        targetEnergy = 0.42;
+        tR = 255; tG = 95; tB = 85;
         break;
     }
 
-    // Ease voice, expand, breathe
-    voiceLevel = lerp(voiceLevel, targetVoice, 0.15);
-    smoothExpand = lerp(smoothExpand, targetExpand, 0.12);
+    // ── Ease all parameters ────────────────────────────────
+    voiceLevel = lerp(voiceLevel, targetVoice, 0.18);
+    smoothExpand = lerp(smoothExpand, targetExpand, 0.09);
+    smoothTurb = lerp(smoothTurb, targetTurb, 0.06);
     smoothBreathe = lerp(smoothBreathe, targetBreathe, 0.04);
+    smoothEnergy = lerp(smoothEnergy, targetEnergy, 0.07);
+    curR = lerp(curR, tR, 0.05);
+    curG = lerp(curG, tG, 0.05);
+    curB = lerp(curB, tB, 0.05);
+    var ri = curR | 0, gi = curG | 0, bi = curB | 0;
+    var rgbStr = ri + ',' + gi + ',' + bi;
 
-    // Rotation
-    rotY += rotYSpeed * dt * speedMult;
+    // ── Rotation ────────────────────────────────────────────
+    rotY += ROT_SPEED * dt * (1 + smoothTurb * 0.6);
     var cY = Math.cos(rotY), sY = Math.sin(rotY);
-    var cX = Math.cos(rotX), sX = Math.sin(rotX);
 
-    // Fire new activation seeds
-    if (fireRate > 0 && time > nextSeedTime) {
-      fireSeed();
-      nextSeedTime = time + (1 / fireRate) * (0.5 + Math.random() * 0.9);
-    }
-    propagateActivation(dt);
-
-    // Breathing radius (very subtle)
-    var breath = smoothBreathe * Math.sin(time * 1.3);
+    // ── Breathing radius ───────────────────────────────────
+    var breath = Math.sin(time * 0.95) * smoothBreathe;
     var rad = baseRadius * (1 + smoothExpand + breath);
 
-    // ── Project all nodes ────────────────────────────────────
-    // Apply Y then X rotation, record screen pos + depth
-    var proj = new Array(N);
+    var turb = 0.055 + smoothTurb;
+    var brightness = 0.42 + smoothEnergy * 0.62;
+
+    // ── Render ──────────────────────────────────────────────
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Soft halo — normal blend, under everything
+    var halo = ctx.createRadialGradient(cx, cy, 0, cx, cy, rad * 1.85);
+    var haloA = 0.06 + smoothEnergy * 0.14;
+    halo.addColorStop(0,    'rgba(' + rgbStr + ',' + haloA.toFixed(3) + ')');
+    halo.addColorStop(0.35, 'rgba(' + rgbStr + ',' + (haloA * 0.45).toFixed(3) + ')');
+    halo.addColorStop(1,    'rgba(0,0,0,0)');
+    ctx.fillStyle = halo;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Particle cloud — additive so dense regions sum to bright
+    ctx.globalCompositeOperation = 'lighter';
+
     for (var i = 0; i < N; i++) {
       var p = pts[i];
-      // rotate around Y
-      var x1 = p.nx * cY + p.nz * sY;
-      var z1 = -p.nx * sY + p.nz * cY;
-      var y1 = p.ny;
-      // rotate around X
-      var y2 = y1 * cX - z1 * sX;
-      var z2 = y1 * sX + z1 * cX;
-      var x2 = x1;
-      proj[i] = {
-        sx: cx + x2 * rad,
-        sy: cy + y2 * rad,
-        z: z2,           // -1 (back) .. +1 (front)
-      };
-    }
 
-    // ── Render ───────────────────────────────────────────────
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.save();
+      // Per-particle directional wobble (organic drift)
+      var dx = Math.sin(time * 0.55 * p.sp1 + p.ph1) * turb;
+      var dy = Math.sin(time * 0.67 * p.sp2 + p.ph2) * turb;
+      var dz = Math.sin(time * 0.49 * p.sp1 + p.ph3) * turb;
 
-    // Soft inner core glow — very subtle ember in center
-    var coreA = 0.07 + voiceLevel * 0.18;
-    var coreR = rad * 0.55;
-    var core = ctx.createRadialGradient(cx, cy, 0, cx, cy, coreR);
-    core.addColorStop(0,   'rgba(70,150,240,' + (coreA * 0.9).toFixed(3) + ')');
-    core.addColorStop(0.45,'rgba(40,100,220,' + (coreA * 0.35).toFixed(3) + ')');
-    core.addColorStop(1,   'rgba(10,40,140,0)');
-    ctx.beginPath();
-    ctx.arc(cx, cy, coreR, 0, Math.PI * 2);
-    ctx.fillStyle = core;
-    ctx.fill();
+      var nx = p.nx + dx;
+      var ny = p.ny + dy;
+      var nz = p.nz + dz;
+      var L = Math.sqrt(nx * nx + ny * ny + nz * nz);
+      if (L < 0.01) continue;
+      nx /= L; ny /= L; nz /= L;
 
-    // ── Edges — two depth passes (back/front) for cleanliness ──
-    // Back hemisphere: dim. Front hemisphere: brighter.
-    // Edge brightness is boosted by max activation of its endpoints.
-    ctx.lineCap = 'round';
+      // Per-particle radial pulse
+      var rLocal = p.r0 + Math.sin(time * 1.15 * p.sp2 + p.ph1) * 0.055 * (1 + smoothTurb);
 
-    // Back pass
-    ctx.strokeStyle = 'rgba(' + rr + ',' + gg + ',' + bb + ',0.09)';
-    ctx.lineWidth = 0.55 * dpr;
-    ctx.beginPath();
-    for (var e = 0; e < edges.length; e++) {
-      var pa = proj[edges[e].i], pb = proj[edges[e].j];
-      if ((pa.z + pb.z) * 0.5 < 0) {
-        ctx.moveTo(pa.sx, pa.sy);
-        ctx.lineTo(pb.sx, pb.sy);
-      }
-    }
-    ctx.stroke();
+      // Rotate around Y axis
+      var x1 = nx * cY + nz * sY;
+      var z1 = -nx * sY + nz * cY;
+      var y1 = ny;
 
-    // Front pass — normal edges
-    ctx.strokeStyle = 'rgba(' + rr + ',' + gg + ',' + bb + ',0.30)';
-    ctx.lineWidth = 0.75 * dpr;
-    ctx.beginPath();
-    for (var e = 0; e < edges.length; e++) {
-      var pa = proj[edges[e].i], pb = proj[edges[e].j];
-      if ((pa.z + pb.z) * 0.5 >= 0) {
-        var maxAct = Math.max(activation[edges[e].i], activation[edges[e].j]);
-        if (maxAct > 0.08) continue;  // draw hot ones in the glow pass
-        ctx.moveTo(pa.sx, pa.sy);
-        ctx.lineTo(pb.sx, pb.sy);
-      }
-    }
-    ctx.stroke();
+      var sx = cx + x1 * rLocal * rad;
+      var sy = cy + y1 * rLocal * rad;
+      var depth = (z1 + 1) * 0.5;   // 0 back, 1 front
 
-    // Front pass — activated edges (glow)
-    ctx.shadowBlur = 6 * dpr;
-    ctx.shadowColor = 'rgba(' + rr + ',' + gg + ',' + bb + ',0.95)';
-    for (var e = 0; e < edges.length; e++) {
-      var pa = proj[edges[e].i], pb = proj[edges[e].j];
-      var avgZ = (pa.z + pb.z) * 0.5;
-      if (avgZ < 0) continue;
-      var maxAct = Math.max(activation[edges[e].i], activation[edges[e].j]);
-      if (maxAct <= 0.08) continue;
-      ctx.strokeStyle = 'rgba(' + rr + ',' + gg + ',' + bb + ',' + (0.35 + maxAct * 0.55).toFixed(3) + ')';
-      ctx.lineWidth = (0.85 + maxAct * 1.1) * dpr;
+      // Layer-specific brightness weighting
+      var layerMul;
+      if (p.layer === 0)      layerMul = 1.25;  // core hot
+      else if (p.layer === 1) layerMul = 0.95;  // shell
+      else                    layerMul = 0.60;  // wispy outer
+
+      var alpha = (0.12 + depth * 0.55) * p.br * brightness * layerMul;
+      if (alpha < 0.018) continue;
+      if (alpha > 0.98) alpha = 0.98;
+
+      var size = (0.55 + depth * 0.90) * dpr;
+      // Core particles slightly bigger so center reads as a glow
+      if (p.layer === 0) size *= 1.15;
+
+      ctx.fillStyle = 'rgba(' + rgbStr + ',' + alpha.toFixed(3) + ')';
       ctx.beginPath();
-      ctx.moveTo(pa.sx, pa.sy);
-      ctx.lineTo(pb.sx, pb.sy);
-      ctx.stroke();
-    }
-    ctx.shadowBlur = 0;
-
-    // ── Nodes — depth-sorted, size & alpha depth-cued ─────────
-    var order = new Array(N);
-    for (var i = 0; i < N; i++) order[i] = i;
-    order.sort(function (a, b) { return proj[a].z - proj[b].z; });
-
-    for (var k = 0; k < N; k++) {
-      var idx = order[k];
-      var pt = proj[idx];
-      var depth = (pt.z + 1) / 2;                    // 0..1 back→front
-      var act = activation[idx];
-
-      // Dim back hemisphere more aggressively — gives depth
-      var baseA = 0.12 + depth * depth * 0.88;
-      var alpha = Math.min(1, baseA + act * 0.6);
-      var size = (0.7 + depth * 1.2 + act * 1.8) * dpr;
-
-      // Activated nodes get an extra glow
-      if (act > 0.12) {
-        ctx.shadowBlur = (4 + act * 10) * dpr;
-        ctx.shadowColor = 'rgba(' + rr + ',' + gg + ',' + bb + ',' + (0.7 + act * 0.3).toFixed(2) + ')';
-      } else {
-        ctx.shadowBlur = 0;
-      }
-
-      ctx.beginPath();
-      ctx.arc(pt.sx, pt.sy, size, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(' + rr + ',' + gg + ',' + bb + ',' + alpha.toFixed(3) + ')';
+      ctx.arc(sx, sy, size, 0, Math.PI * 2);
       ctx.fill();
     }
-    ctx.shadowBlur = 0;
 
-    ctx.restore();
+    ctx.globalCompositeOperation = 'source-over';
   }
 
   // ── Public API ────────────────────────────────────────────
@@ -328,7 +249,6 @@
       if (raf) { cancelAnimationFrame(raf); raf = null; }
       lastT = 0;
       if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
-      if (activation) activation.fill(0);
     } else {
       resize();
       if (!raf) { lastT = 0; raf = requestAnimationFrame(tick); }
