@@ -71,8 +71,11 @@
     raf = requestAnimationFrame(tick);
     time += 0.016;
 
-    voiceLevel    = lerp(voiceLevel,    targetVoice,   0.12);  // responsive to voice
-    smoothExpand  = lerp(smoothExpand,  targetExpand,  0.08);  // expansion follows quickly
+    // Asymmetric easing: fast attack AND fast decay → rhythmic pulse per syllable
+    var voiceAttack = targetVoice > voiceLevel ? 0.18 : 0.14;
+    var expandAttack = targetExpand > smoothExpand ? 0.16 : 0.13;
+    voiceLevel   = lerp(voiceLevel,   targetVoice,  voiceAttack);
+    smoothExpand = lerp(smoothExpand, targetExpand, expandAttack);
     smoothMicro   = lerp(smoothMicro,   targetMicro,   0.025); // slow — organic feel
     smoothBreathe = lerp(smoothBreathe, targetBreathe, 0.018); // slow — organic feel
 
@@ -90,7 +93,7 @@
 
       case 'listening':
         var v = Math.sqrt(voiceLevel);
-        targetExpand  = v * 0.40;
+        targetExpand  = v * 0.55;
         targetMicro   = 0.11 + v * 0.04; // more alive when hearing voice
         targetBreathe = 0.040;
         break;
