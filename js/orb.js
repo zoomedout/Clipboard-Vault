@@ -19,7 +19,7 @@
   var orbState = 'idle';
   var raf = null;
 
-  var N = 3500;
+  var N = 6000;
   var pts = [];
 
   function init() {
@@ -57,8 +57,8 @@
     canvas.style.height = h + 'px';
     cx = canvas.width / 2;
     cy = canvas.height / 2;
-    // Leave room so even at max voice scale (1.3x) dots never leave the canvas
-    baseRadius = Math.min(w, h) * 0.28 * dpr;
+    // Leave room so even at max voice scale dots never leave the canvas
+    baseRadius = Math.min(w, h) * 0.34 * dpr;
   }
 
   function lerp(a, b, t) { return a + (b - a) * t; }
@@ -67,11 +67,11 @@
     raf = requestAnimationFrame(tick);
     time += 0.016;
 
-    // Smooth all target values — slow easing for organic feel
-    voiceLevel = lerp(voiceLevel, targetVoice, 0.06);
-    smoothScale = lerp(smoothScale, targetScale, 0.04);
-    smoothWave  = lerp(smoothWave,  targetWave,  0.05);
-    smoothSpeed = lerp(smoothSpeed, targetSpeed, 0.05);
+    // Smooth all target values — very slow easing for fluid organic feel
+    voiceLevel  = lerp(voiceLevel,  targetVoice, 0.035);
+    smoothScale = lerp(smoothScale, targetScale, 0.022);
+    smoothWave  = lerp(smoothWave,  targetWave,  0.028);
+    smoothSpeed = lerp(smoothSpeed, targetSpeed, 0.028);
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -89,10 +89,12 @@
         break;
 
       case 'listening':
-        targetScale = 1.0 + voiceLevel * 0.28;
-        targetWave  = 0.03 + voiceLevel * 0.14;
-        targetSpeed = 0.9 + voiceLevel * 1.8;
-        rotSpd = 0.004 + voiceLevel * 0.003;
+        // sqrt curve: quiet speech gives gentle expansion, loud gives full
+        var v = Math.sqrt(voiceLevel);
+        targetScale = 1.0 + v * 0.42;
+        targetWave  = 0.025 + v * 0.13;
+        targetSpeed = 0.8 + v * 1.6;
+        rotSpd = 0.003; // constant slow rotation — independent of voice
         break;
 
       case 'speaking':
@@ -177,7 +179,7 @@
       var pt = proj[j];
       var depth = (pt.z + 1.3) / 2.6;              // 0..1 front-to-back
       var edgeFade = 1 - Math.pow(Math.max(0, depth - 0.5) * 2, 1.5); // fade outer ring
-      var dotSize = (0.22 + depth * 0.55) * dpr;   // tiny dots, size by depth
+      var dotSize = (0.15 + depth * 0.38) * dpr;   // very fine iOS-style dots
       var alpha = Math.max(0, (0.06 + depth * 0.88) * (0.4 + edgeFade * 0.6));
 
       ctx.beginPath();
