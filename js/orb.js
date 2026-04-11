@@ -45,7 +45,7 @@
   var curR = R, curG = G, curB = B;
 
   // ── Activation regions ────────────────────────────────────
-  var MAX_REGIONS = 2;
+  var MAX_REGIONS = 4;
   var regions = [];
   var lastRegionSpawn = 0;
 
@@ -96,34 +96,57 @@
   }
 
   // ── Regions lifecycle ─────────────────────────────────────
+  // Temp particles animate through 4 phases:
+  //   1. LAUNCH   core → outer edge (slow, dramatic ease-out)
+  //   2. BLAST    outer edge → peak overshoot beyond the orb
+  //   3. SPLASH   hold at peak with tangential nudge
+  //   4. RETREAT  peak → rest position back on the shell
+  // Region alpha (weight) fades in during launch, holds through
+  // blast/splash/retreat, fades out during the tail of retreat.
   function spawnRegion() {
     if (regions.length >= MAX_REGIONS) return;
     var d = randDir();
+    var launchDur = 0.90 + Math.random() * 0.30;   // 0.90–1.20s — slow dramatic launch
+    var blastDur  = 0.25 + Math.random() * 0.10;   // 0.25–0.35s — overshoot past shell
+    var splashDur = 0.12 + Math.random() * 0.10;   // 0.12–0.22s — hold at peak, splash
+    var retreatDur = 0.75 + Math.random() * 0.25;  // 0.75–1.00s — slow pull-back
+    var totalDur  = launchDur + blastDur + splashDur + retreatDur + 0.18;  // + stagger buffer
+
     var region = {
       nx: d.nx, ny: d.ny, nz: d.nz,
       age: 0,
       weight: 0,
-      fadeIn: 0.16 + Math.random() * 0.12,   // 0.16–0.28s (alpha fade)
-      hold: 1.20 + Math.random() * 0.80,     // 1.20–2.00s
-      fadeOut: 0.55 + Math.random() * 0.35,  // 0.55–0.90s
-      expandDur: 0.45 + Math.random() * 0.20, // 0.45–0.65s  (core → shell travel)
+      fadeIn:  0.20,
+      fadeOut: 0.45,
+      hold:    Math.max(0.1, totalDur - 0.65),      // auto-matches total particle life
+      launchDur: launchDur,
+      blastDur:  blastDur,
+      splashDur: splashDur,
+      retreatDur: retreatDur,
       temps: [],
     };
     // Spawn temporary particles inside the activation cone. These
     // are rendered with IDENTICAL per-particle appearance to main
     // shell particles — same size, same brightness, same color.
-    // The "lit up" look comes purely from pooled density in the
-    // cone, summed by additive blending. More temps = brighter spot.
+    // The "lit up" look comes from pooled density + the eruption
+    // motion blasting them past the shell and pulling them back.
     var tempCount = 1500;
     for (var i = 0; i < tempCount; i++) {
       var pos = sampleInCone(d.nx, d.ny, d.nz, 0.9);
       region.temps.push({
         nx: pos.nx, ny: pos.ny, nz: pos.nz,
-        r0: 1.06 + Math.random() * 0.14,     // 1.06–1.20 — lands outside the main shell
+        rLand: 1.12 + Math.random() * 0.10,   // 1.12–1.22 — edge of orb after launch
+        rPeak: 1.42 + Math.random() * 0.18,   // 1.42–1.60 — blasted out beyond orb
+        rRest: 1.00 + Math.random() * 0.07,   // 1.00–1.07 — settles back on shell
         ph: Math.random() * Math.PI * 2,
         sp: 0.70 + Math.random() * 0.50,
-        br: 0.55 + Math.random() * 0.50,     // matches main-particle br range
-        stagger: Math.random() * 0.15,       // 0–0.15s delay — some particles lag
+        br: 0.55 + Math.random() * 0.50,
+        stagger: Math.random() * 0.12,
+        // Random tangent-ish splash vector — kicks in during blast,
+        // fades during retreat. Magnitude 0..0.18 per component.
+        splashX: (Math.random() - 0.5) * 0.36,
+        splashY: (Math.random() - 0.5) * 0.36,
+        splashZ: (Math.random() - 0.5) * 0.36,
       });
     }
     regions.push(region);
@@ -305,18 +328,18 @@
     var spawnCap = MAX_REGIONS;
     switch (orbState) {
       case 'speaking':
-        spawnInterval = 0.5;
-        spawnCap = 2;
+        spawnInterval = 0.5;     // minimum — multiple regions run in parallel
+        spawnCap = 4;
         break;
       case 'listening':
         if (voiceFast > 0.10) {
           spawnInterval = 0.5;
-          spawnCap = 2;
+          spawnCap = 4;
         }
         break;
       case 'thinking':
-        spawnInterval = 0.5;
-        spawnCap = 1;
+        spawnInterval = 0.8;
+        spawnCap = 2;
         break;
     }
     if (time - lastRegionSpawn > spawnInterval && regions.length < spawnCap) {
@@ -424,36 +447,58 @@
       for (var ti = 0; ti < temps.length; ti++) {
         var tp = temps[ti];
 
-        // Same wobble profile as main particles
+        // ── Phase computation ────────────────────────────────
+        // Four phases per particle, clocked by reg.age - stagger:
+        //   launch  (core → rLand, ease-out cubic, slow & dramatic)
+        //   blast   (rLand → rPeak, ease-out quad, quick overshoot)
+        //   splash  (hold at rPeak with tangential spread)
+        //   retreat (rPeak → rRest, ease-in-out, slow pull-back)
+        var CORE_START_R = 0.08;
+        var localAge = reg.age - tp.stagger;
+        var phaseR, splashFactor;
+
+        if (localAge <= 0) {
+          phaseR = CORE_START_R;
+          splashFactor = 0;
+        } else if (localAge < reg.launchDur) {
+          // Launch
+          var tL1 = localAge / reg.launchDur;
+          tL1 = 1 - Math.pow(1 - tL1, 3);     // ease-out cubic
+          phaseR = CORE_START_R + (tp.rLand - CORE_START_R) * tL1;
+          splashFactor = 0;
+        } else if (localAge < reg.launchDur + reg.blastDur) {
+          // Blast
+          var tB = (localAge - reg.launchDur) / reg.blastDur;
+          var tBeased = 1 - Math.pow(1 - tB, 2);  // ease-out quad
+          phaseR = tp.rLand + (tp.rPeak - tp.rLand) * tBeased;
+          splashFactor = tBeased;
+        } else if (localAge < reg.launchDur + reg.blastDur + reg.splashDur) {
+          // Splash — hold at peak
+          phaseR = tp.rPeak;
+          splashFactor = 1;
+        } else {
+          // Retreat
+          var tR = (localAge - reg.launchDur - reg.blastDur - reg.splashDur) / reg.retreatDur;
+          if (tR > 1) tR = 1;
+          // ease-in-out
+          var tReased = tR < 0.5 ? 2 * tR * tR : 1 - Math.pow(-2 * tR + 2, 2) * 0.5;
+          phaseR = tp.rPeak + (tp.rRest - tp.rPeak) * tReased;
+          splashFactor = 1 - tReased;
+        }
+
+        // Wobble + splash overlay on direction
         var twx = Math.sin(time * 0.55 * tp.sp + tp.ph) * turb;
         var twy = Math.sin(time * 0.67 * tp.sp + tp.ph + 1.1) * turb;
         var twz = Math.sin(time * 0.49 * tp.sp + tp.ph + 2.3) * turb;
 
-        var tnx = tp.nx + twx;
-        var tny = tp.ny + twy;
-        var tnz = tp.nz + twz;
+        var tnx = tp.nx + twx + tp.splashX * splashFactor;
+        var tny = tp.ny + twy + tp.splashY * splashFactor;
+        var tnz = tp.nz + twz + tp.splashZ * splashFactor;
         var tL = Math.sqrt(tnx * tnx + tny * tny + tnz * tnz);
         if (tL < 0.01) continue;
         tnx /= tL; tny /= tL; tnz /= tL;
 
-        // Core → shell expansion travel. Particles start near center
-        // (CORE_START_R) and travel outward to their destination during
-        // reg.expandDur, with a per-temp stagger so they don't all arrive
-        // at once. Cubic ease-out makes them burst fast then settle.
-        var CORE_START_R = 0.08;
-        var localAge = reg.age - tp.stagger;
-        var travel;
-        if (localAge <= 0) {
-          travel = 0;
-        } else if (localAge >= reg.expandDur) {
-          travel = 1;
-        } else {
-          var t = localAge / reg.expandDur;
-          travel = 1 - Math.pow(1 - t, 3);    // ease-out cubic
-        }
-
-        var destR = tp.r0 + Math.sin(time * 1.15 * tp.sp + tp.ph) * 0.055 * (1 + smoothTurb);
-        var trLocal = CORE_START_R + (destR - CORE_START_R) * travel;
+        var trLocal = phaseR;
 
         var tx1 = tnx * cY + tnz * sY;
         var tz1 = -tnx * sY + tnz * cY;
